@@ -6,6 +6,8 @@ import { SiteHeader } from "./components/SiteHeader";
 import { sections } from "./content";
 import type { SectionId } from "./types";
 
+const anchorOffset = 18;
+
 interface SectionMetrics {
   id: SectionId;
   visibleRatio: number;
@@ -59,6 +61,32 @@ function getDominantSection(metrics: SectionMetrics[]) {
   })[0];
 }
 
+function scrollToSectionHeading(sectionId: SectionId) {
+  const heading = document.querySelector<HTMLElement>(
+    `[data-section-anchor="${sectionId}"]`,
+  );
+
+  if (!heading) {
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    return;
+  }
+
+  const headerHeight =
+    parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--nav-height"),
+    ) || 0;
+  const top =
+    window.scrollY + heading.getBoundingClientRect().top - headerHeight - anchorOffset;
+
+  window.scrollTo({
+    top: Math.max(top, 0),
+    behavior: "smooth",
+  });
+}
+
 function App() {
   const sectionIds = useMemo(() => sections.map((section) => section.id), []);
   const [activeSection, setActiveSection] = useState<SectionId>("home");
@@ -93,6 +121,38 @@ function App() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", requestActiveSectionUpdate);
 
+    const handleAnchorClick = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const anchor = target.closest<HTMLAnchorElement>('a[href^="#"]');
+
+      if (!anchor) {
+        return;
+      }
+
+      const hash = anchor.getAttribute("href");
+
+      if (!hash || hash === "#") {
+        return;
+      }
+
+      const sectionId = hash.slice(1) as SectionId;
+
+      if (!sectionIds.includes(sectionId)) {
+        return;
+      }
+
+      event.preventDefault();
+      scrollToSectionHeading(sectionId);
+      window.history.pushState(null, "", hash);
+    };
+
+    document.addEventListener("click", handleAnchorClick);
+
     return () => {
       if (frameId !== 0) {
         window.cancelAnimationFrame(frameId);
@@ -100,6 +160,7 @@ function App() {
 
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", requestActiveSectionUpdate);
+      document.removeEventListener("click", handleAnchorClick);
     };
   }, [sectionIds]);
 

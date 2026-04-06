@@ -59,7 +59,9 @@ export function Hero() {
     <section className="hero section-frame" id="home">
       <div className="hero__masthead">
         <div className="hero__lead">
-          <p className="section-kicker">{home.kicker}</p>
+          <p className="section-kicker" data-section-anchor={home.id}>
+            {home.kicker}
+          </p>
           <p className="hero__availability">{siteMeta.accentLabel}</p>
           <a
             aria-label={`Link to ${home.navLabel} section`}

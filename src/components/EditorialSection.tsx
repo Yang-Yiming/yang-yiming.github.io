@@ -10,7 +10,9 @@ export function EditorialSection({ section }: EditorialSectionProps) {
     <section className="editorial-section section-frame" id={section.id}>
       <div className="section-header">
         <div className="section-heading">
-          <p className="section-kicker">{section.kicker}</p>
+          <p className="section-kicker" data-section-anchor={section.id}>
+            {section.kicker}
+          </p>
           <a
             aria-label={`Link to ${section.navLabel} section`}
             className="section-heading-link"
