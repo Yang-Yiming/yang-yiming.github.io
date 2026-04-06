@@ -12,7 +12,9 @@
     --accent: #3f6288;
     --accent-soft: rgba(63, 98, 136, 0.12);
     --max-width: 1200px;
-    --nav-height: 72px;
+    --nav-height-compact: 80px;
+    --nav-height-home-expanded: 112px;
+    --nav-height: var(--nav-height-compact);
     --section-gap: clamp(4rem, 8vw, 9rem);
     --gutter: clamp(1.1rem, 3vw, 2.4rem);
     --transition: 180ms ease;
@@ -266,7 +268,8 @@ select {
 
 @media (max-width: 640px) {
     :root {
-        --nav-height: 104px;
+        --nav-height-compact: 112px;
+        --nav-height-home-expanded: 136px;
         --section-gap: 3.5rem;
     }
 

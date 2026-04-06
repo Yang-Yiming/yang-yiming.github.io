@@ -474,7 +474,7 @@ function App() {
 
   return (
     <div className="page-shell">
-      <SiteHeader activeSection={activeSection} />
+      <SiteHeader activeSection={activeSection} isHome />
       <HomeContent />
     </div>
   );
