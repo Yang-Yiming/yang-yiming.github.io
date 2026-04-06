@@ -13,6 +13,12 @@ export interface SectionItem {
   href?: string;
 }
 
+export interface HeroImage {
+  src: string;
+  alt: string;
+  caption: string;
+}
+
 export interface SectionContent {
   id: SectionId;
   navLabel: string;

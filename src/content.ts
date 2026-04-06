@@ -1,17 +1,36 @@
-import type { SectionContent } from "./types";
+import type { HeroImage, SectionContent } from "./types";
 
 export const siteMeta = {
   name: "Yang Yiming",
-  role: "Designer, Builder, Researcher",
+  role: "Student · Data Science",
   summary:
-    "An editorial index for projects, research notes, writing, and fragments of daily curiosity.",
-  location: "Based in Shenzhen / building on the web",
-  accentLabel: "Available for thoughtful collaborations",
+    "I'm an undergraduate student at SUSTech, interested in Computer Science and Artifical Intelegence. \
+    I love oldschool street dance culture ([locking](https://en.wikipedia.org/wiki/Locking_(dance)) & [house](https://en.wikipedia.org/wiki/House_dance))\
+    while my favorite music genres are [Dubstep](https://en.wikipedia.org/wiki/Dubstep) & [House](https://en.wikipedia.org/wiki/House_music).",
+  location: "Shenzhen, China",
+  accentLabel: "Empty accentLabel",
   links: [
-    { label: "GitHub", href: "https://github.com/" },
-    { label: "Email", href: "mailto:hello@example.com" },
-    { label: "X", href: "https://x.com/" },
+    { label: "GitHub", href: "https://github.com/Yang-Yiming" },
+    { label: "Email", href: "12411332@mail.sustech.edu.cn" },
+    // { label: "X", href: "https://x.com/" },
   ],
+  heroImages: [
+    {
+      src: "/assets/sand-homepage.webp",
+      alt: "sanddraw",
+      caption: "Random Sand Drawing",
+    },
+    {
+      src: "/assets/hero-02.jpg",
+      alt: "Hero image two.",
+      caption: "Another visual fragment from research or life.",
+    },
+    {
+      src: "/assets/hero-03.jpg",
+      alt: "Hero image three.",
+      caption: "A third slot for atmosphere or documentation.",
+    },
+  ] satisfies HeroImage[],
 };
 
 export const sections: SectionContent[] = [
@@ -19,9 +38,8 @@ export const sections: SectionContent[] = [
     id: "home",
     navLabel: "Home",
     kicker: "Index / 01",
-    title: "Personal statements, selected work, and a living archive.",
-    intro:
-      "Built as a calm, scrollable document. The homepage acts both as an introduction and as a direct entry point into ongoing work.",
+    title: "Hello, I'm Yang Yiming",
+    intro: "This is the homepage, showing the indexes and entries",
     items: [
       {
         title: "Current focus",
@@ -41,9 +59,8 @@ export const sections: SectionContent[] = [
     id: "projects",
     navLabel: "Projects",
     kicker: "Index / 02",
-    title: "Projects with visible structure and quiet ambition.",
-    intro:
-      "A compact list of product, interface, and creative engineering work. This area is ready to grow into full case studies later.",
+    title: "Projects.",
+    intro: "Projects involved, as a maintainer or a contributor.",
     items: [
       {
         title: "Project Placeholder Alpha",
@@ -91,7 +108,8 @@ export const sections: SectionContent[] = [
     id: "life",
     navLabel: "Life",
     kicker: "Index / 04",
-    title: "A softer register for places, routines, and things that shape the work.",
+    title:
+      "A softer register for places, routines, and things that shape the work.",
     intro:
       "Not everything belongs in a project log. This section leaves room for travel fragments, habits, conversations, and atmosphere.",
     items: [
@@ -135,7 +153,8 @@ export const sections: SectionContent[] = [
     id: "fun",
     navLabel: "Fun!",
     kicker: "Index / 06",
-    title: "Odd links, playful prototypes, and the less reasonable side of curiosity.",
+    title:
+      "Odd links, playful prototypes, and the less reasonable side of curiosity.",
     intro:
       "A closing section for experiments that are faster, lighter, stranger, or simply enjoyable enough to keep around.",
     items: [
