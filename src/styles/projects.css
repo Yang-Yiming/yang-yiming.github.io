@@ -1,0 +1,176 @@
+.projects-groups {
+    display: grid;
+    gap: 3.4rem;
+}
+
+.projects-group {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.projects-group__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 1.2rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.projects-group__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.project-card {
+    display: grid;
+    gap: 1.1rem;
+    min-height: 100%;
+    padding: 1rem 1.05rem 1.05rem;
+    border: 1px solid var(--line);
+    background: rgba(251, 252, 253, 0.82);
+    border-radius: 0.75rem;
+    transition:
+        background-color var(--transition),
+        border-color var(--transition),
+        color var(--transition),
+        transform var(--transition);
+}
+
+.project-card:hover,
+.project-card:focus-visible {
+    background: rgba(251, 252, 253, 0.98);
+    border-color: var(--line-strong);
+    transform: translateY(-1px);
+}
+
+.project-card__header,
+.project-card__heading,
+.project-card__meta,
+.project-card__footer {
+    display: flex;
+    align-items: center;
+}
+
+.project-card__header,
+.project-card__footer {
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.project-card__heading,
+.project-card__meta {
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.project-card__meta {
+    flex-wrap: wrap;
+}
+
+.project-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-soft);
+}
+
+.project-card__icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.project-card__badge {
+    padding: 0.14rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+.project-card__body {
+    display: grid;
+    align-content: start;
+}
+
+.project-card__title {
+    margin: 0;
+    font-family: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+    font-size: 0.96rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-card__description {
+    min-height: 4.8rem;
+    font-size: 0.9rem;
+    line-height: 1.7;
+}
+
+.project-card__footer {
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--line);
+}
+
+.project-card__meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+}
+
+.project-card__meta--secondary {
+    justify-content: flex-end;
+    color: var(--text-muted);
+}
+
+.project-card__language-dot {
+    width: 0.62rem;
+    height: 0.62rem;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.project-card__star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0.95rem;
+    height: 0.95rem;
+    color: var(--text-muted);
+    transform: translateY(-0.01rem);
+}
+
+.project-card__star svg {
+    width: 100%;
+    height: 100%;
+}
+
+@media (max-width: 900px) {
+    .projects-group__list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .project-card__meta {
+        gap: 0.7rem;
+        flex-wrap: wrap;
+    }
+
+    .project-card__footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .project-card__meta--secondary {
+        justify-content: flex-start;
+    }
+}

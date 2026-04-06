@@ -1,0 +1,243 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap");
+
+:root {
+    color-scheme: light;
+    --bg: #f7f8fa;
+    --bg-strong: #f1f3f6;
+    --text: #171b22;
+    --text-soft: #5d6675;
+    --text-muted: #7b8492;
+    --line: rgba(23, 27, 34, 0.14);
+    --line-strong: rgba(23, 27, 34, 0.22);
+    --accent: #3f6288;
+    --accent-soft: rgba(63, 98, 136, 0.12);
+    --max-width: 1200px;
+    --nav-height: 72px;
+    --section-gap: clamp(4rem, 8vw, 9rem);
+    --gutter: clamp(1.1rem, 3vw, 2.4rem);
+    --transition: 180ms ease;
+    font-family: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(63, 98, 136, 0.08),
+            transparent 32%
+        ),
+        linear-gradient(180deg, #fbfcfd 0%, var(--bg) 100%);
+    color: var(--text);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+#root,
+.page-shell {
+    min-height: 100vh;
+}
+
+.page-main {
+    max-width: calc(var(--max-width) + (var(--gutter) * 2));
+    margin: 0 auto;
+    padding: 0 var(--gutter) 6rem;
+}
+
+.section-frame {
+    scroll-margin-top: calc(var(--nav-height) + 1.75rem);
+    border-top: 1px solid var(--line);
+}
+
+.section-kicker,
+.hero__availability,
+.list-row__meta,
+.section-source-label,
+.project-card__meta,
+.projects-group__title {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.hero__availability {
+    color: var(--accent);
+}
+
+.hero__title,
+.section-title,
+.list-row__title {
+    margin: 0;
+    font-family: "Source Serif 4", Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+}
+
+.hero__summary,
+.hero__body,
+.section-intro,
+.list-row__description,
+.project-card__description {
+    margin: 0;
+    max-width: 60ch;
+    color: var(--text-soft);
+    font-size: 0.98rem;
+    line-height: 1.9;
+}
+
+.hero__title > :first-child,
+.section-title > :first-child,
+.list-row__title > :first-child,
+.project-card__title > :first-child,
+.hero__summary > :first-child,
+.hero__body > :first-child,
+.section-intro > :first-child,
+.project-card__description > :first-child,
+.list-row__description > :first-child {
+    margin-top: 0;
+}
+
+.hero__title > :last-child,
+.section-title > :last-child,
+.list-row__title > :last-child,
+.project-card__title > :last-child,
+.hero__summary > :last-child,
+.hero__body > :last-child,
+.section-intro > :last-child,
+.project-card__description > :last-child,
+.list-row__description > :last-child {
+    margin-bottom: 0;
+}
+
+.hero__summary p,
+.hero__body p,
+.section-intro p,
+.project-card__description p,
+.list-row__description p {
+    margin: 0 0 0.9rem;
+}
+
+.hero__summary a,
+.hero__body a,
+.section-intro a,
+.project-card__description a,
+.list-row__description a,
+.hero__title a,
+.section-title a,
+.project-card__title a,
+.list-row__title a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 0.14em;
+}
+
+.hero__summary ul,
+.hero__summary ol,
+.hero__body ul,
+.hero__body ol,
+.section-intro ul,
+.section-intro ol,
+.project-card__description ul,
+.project-card__description ol,
+.list-row__description ul,
+.list-row__description ol {
+    margin: 0.35rem 0 0.95rem;
+    padding-left: 1.25rem;
+}
+
+.hero__summary li,
+.hero__body li,
+.section-intro li,
+.project-card__description li,
+.list-row__description li {
+    margin: 0.2rem 0;
+}
+
+.hero__summary code,
+.hero__body code,
+.section-intro code,
+.project-card__description code,
+.list-row__description code,
+.hero__title code,
+.section-title code,
+.project-card__title code,
+.list-row__title code {
+    padding: 0.08rem 0.36rem;
+    border: 1px solid var(--line);
+    background: var(--bg-strong);
+    font-size: 0.92em;
+}
+
+.hero__summary pre,
+.hero__body pre,
+.section-intro pre,
+.project-card__description pre,
+.list-row__description pre {
+    margin: 0.55rem 0 1rem;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--line);
+    background: var(--bg-strong);
+    overflow-x: auto;
+}
+
+.hero__summary pre code,
+.hero__body pre code,
+.section-intro pre code,
+.project-card__description pre code,
+.list-row__description pre code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.9em;
+}
+
+.hero__title h1,
+.hero__title h2,
+.hero__title h3,
+.section-title h1,
+.section-title h2,
+.section-title h3,
+.project-card__title h1,
+.project-card__title h2,
+.project-card__title h3,
+.list-row__title h1,
+.list-row__title h2,
+.list-row__title h3 {
+    margin: 0;
+    font: inherit;
+}
+
+@media (max-width: 640px) {
+    :root {
+        --nav-height: 104px;
+        --section-gap: 3.5rem;
+    }
+
+    .page-main {
+        padding-bottom: 4rem;
+    }
+}

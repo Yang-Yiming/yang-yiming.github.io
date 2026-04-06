@@ -1,0 +1,104 @@
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(14px);
+    background: rgba(247, 248, 250, 0.82);
+    border-bottom: 1px solid var(--line);
+}
+
+.site-header__inner {
+    max-width: calc(var(--max-width) + (var(--gutter) * 2));
+    margin: 0 auto;
+    min-height: var(--nav-height);
+    padding: 0 var(--gutter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.site-mark {
+    display: grid;
+    gap: 0.2rem;
+    white-space: nowrap;
+}
+
+.site-mark__name {
+    font-size: 0.82rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.site-mark__role {
+    color: var(--text-muted);
+    font-size: 0.74rem;
+}
+
+.site-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.site-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.site-nav__link {
+    position: relative;
+    padding: 0.65rem 0.85rem;
+    color: var(--text-soft);
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition:
+        color var(--transition),
+        background-color var(--transition);
+}
+
+.site-nav__link::after {
+    content: "";
+    position: absolute;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0.45rem;
+    height: 1px;
+    background: transparent;
+    transition: background-color var(--transition);
+}
+
+.site-nav__link:hover,
+.site-nav__link:focus-visible,
+.site-nav__link.is-active {
+    color: var(--text);
+}
+
+.site-nav__link:hover::after,
+.site-nav__link:focus-visible::after,
+.site-nav__link.is-active::after {
+    background: var(--accent);
+}
+
+@media (max-width: 900px) {
+    .site-header__inner {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        padding-top: 0.9rem;
+        padding-bottom: 0.75rem;
+    }
+
+    .site-mark {
+        gap: 0.1rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .site-nav__link {
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
+    }
+}
