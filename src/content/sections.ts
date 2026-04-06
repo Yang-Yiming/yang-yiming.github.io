@@ -37,32 +37,34 @@ export const sections: SectionContent[] = [
     id: "research",
     navLabel: "Research",
     kicker: "Index / 03",
-    title: "Working notes, references, and questions worth staying with.",
+    title: "Research",
     intro:
-      "Research is framed as an evolving notebook: hypotheses, systems thinking, annotated readings, and exploratory prototypes.",
+      "Now being an undergraduate and willing to do some contribution to the research community.\n\
+      My interest are in Auto Regressive Multimodal-LLMs, and I hopes to find a way that go beyond\
+      language to achieve more",
     items: [
-      {
-        title: "Theme Placeholder",
-        meta: "Human-Computer Interaction",
-        description:
-          "Documenting problems, references, and methods that can later become deeper essays or publications.",
-      },
-      {
-        title: "Reading Cluster",
-        meta: "Archive",
-        description:
-          "A slot for reading trails, citations, and the threads connecting them.",
-      },
+      // {
+      //   title: "Theme Placeholder",
+      //   meta: "Human-Computer Interaction",
+      //   description:
+      //     "Documenting problems, references, and methods that can later become deeper essays or publications.",
+      // },
+      // {
+      //   title: "Reading Cluster",
+      //   meta: "Archive",
+      //   description:
+      //     "A slot for reading trails, citations, and the threads connecting them.",
+      // },
     ],
   },
   {
     id: "life",
     navLabel: "Life",
     kicker: "Index / 04",
-    title:
-      "A softer register for places, routines, and things that shape the work.",
+    title: "Things I do and love",
     intro:
-      "Not everything belongs in a project log. This section leaves room for travel fragments, habits, conversations, and atmosphere.",
+      "Not everything belongs in a project log.\
+      This section leaves room for my hobbies, habits, books, music.",
     items: [
       {
         title: "City Notes",
@@ -82,9 +84,9 @@ export const sections: SectionContent[] = [
     id: "blog",
     navLabel: "Blog",
     kicker: "Index / 05",
-    title: "Short essays, build notes, and unfinished thoughts.",
+    title: "Blog",
     intro:
-      "The blog will eventually house writing that sits between documentation and reflection, keeping the tone concise and legible.",
+      "The blog will eventually house writing that sits between documentation and reflection, any words could be here.",
     items: [
       {
         title: "Draft Slot One",

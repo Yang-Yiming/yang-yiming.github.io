@@ -4,9 +4,10 @@ export const siteMeta = {
   name: "Yang Yiming",
   role: "Student · Data Science",
   summary:
-    "I'm an undergraduate student at SUSTech, interested in Computer Science and Artifical Intelegence. \
-    I love oldschool street dance culture ([locking](https://en.wikipedia.org/wiki/Locking_(dance)) & [house](https://en.wikipedia.org/wiki/House_dance))\
-    while my favorite music genres are [Dubstep](https://en.wikipedia.org/wiki/Dubstep) & [House](https://en.wikipedia.org/wiki/House_music).",
+    "I'm an undergraduate student at SUSTech, studying Computer Science and Artificial Intelligence. Interested in Multimodal LLMs." +
+    "I love old-school street dance and bass-heavy music. " +
+    "Building tools with AI whenever I have a need",
+
   location: "Shenzhen, China",
   accentLabel: "Empty accentLabel",
   links: [
