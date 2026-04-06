@@ -56,9 +56,18 @@
         border-color var(--transition);
 }
 
+.list-row--link {
+    position: relative;
+}
+
 .list-row:hover {
     background: linear-gradient(90deg, var(--accent-soft), transparent 40%);
     border-color: var(--line-strong);
+}
+
+.list-row--link:hover .list-row__title,
+.list-row--link:focus-visible .list-row__title {
+    color: var(--accent);
 }
 
 .list-row__body {

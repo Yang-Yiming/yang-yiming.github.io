@@ -12,7 +12,7 @@ export const siteMeta = {
   accentLabel: "Empty accentLabel",
   links: [
     { label: "GitHub", href: "https://github.com/Yang-Yiming" },
-    { label: "Email", href: "12411332@mail.sustech.edu.cn" },
+    { label: "Email", href: "mailto:12411332@mail.sustech.edu.cn" },
   ],
   heroImages: [
     {

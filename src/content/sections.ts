@@ -1,4 +1,5 @@
 import type { SectionContent } from "../types";
+import { getEntrySectionItems } from "./entries";
 import { githubProjectGroups } from "./projects";
 
 export const sections: SectionContent[] = [
@@ -65,20 +66,7 @@ export const sections: SectionContent[] = [
     intro:
       "Not everything belongs in a project log.\
       This section leaves room for my hobbies, habits, books, music.",
-    items: [
-      {
-        title: "City Notes",
-        meta: "Shenzhen / elsewhere",
-        description:
-          "Impressions from movement, weather, streets, and recurring places.",
-      },
-      {
-        title: "Rituals",
-        meta: "Daily Practice",
-        description:
-          "Small routines that quietly influence attention, energy, and pace.",
-      },
-    ],
+    items: getEntrySectionItems("life"),
   },
   {
     id: "blog",
@@ -87,20 +75,7 @@ export const sections: SectionContent[] = [
     title: "Blog",
     intro:
       "The blog will eventually house writing that sits between documentation and reflection, any words could be here.",
-    items: [
-      {
-        title: "Draft Slot One",
-        meta: "Essay",
-        description:
-          "A place for a clean, focused post on process, design, or software craft.",
-      },
-      {
-        title: "Draft Slot Two",
-        meta: "Build Note",
-        description:
-          "A shorter entry for implementation decisions, experiments, and lessons learned.",
-      },
-    ],
+    items: getEntrySectionItems("blog"),
   },
   {
     id: "fun",
