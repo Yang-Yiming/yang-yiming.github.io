@@ -10,14 +10,14 @@ import type { EntryCollectionId, SectionId } from "./types";
 
 const anchorOffset = 18;
 
-type AppRoute =
-  | { kind: "home"; hash: string }
-  | {
-      kind: "entry";
-      collectionId: EntryCollectionId;
-      slug: string;
-    }
-  | { kind: "notFound" };
+type HomeRoute = { kind: "home"; hash: string };
+type EntryRoute = {
+  kind: "entry";
+  collectionId: EntryCollectionId;
+  slug: string;
+};
+type NotFoundRoute = { kind: "notFound" };
+type AppRoute = HomeRoute | EntryRoute | NotFoundRoute;
 
 type ScrollTarget =
   | { kind: "preserve"; top: number }
@@ -107,8 +107,8 @@ function scrollToSectionHeading(
   });
 }
 
-function getCurrentRoute(): AppRoute {
-  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+function parseRoute(url: URL | Location): AppRoute {
+  const pathname = url.pathname.replace(/\/+$/, "") || "/";
   const entryMatch = pathname.match(/^\/(life|blog)\/([^/]+)$/);
 
   if (entryMatch) {
@@ -122,7 +122,7 @@ function getCurrentRoute(): AppRoute {
   if (pathname === "/") {
     return {
       kind: "home",
-      hash: window.location.hash,
+      hash: url.hash,
     };
   }
 
@@ -132,6 +132,11 @@ function getCurrentRoute(): AppRoute {
 function getLocationKey(url: URL | Location) {
   const pathname = url.pathname.replace(/\/+$/, "") || "/";
   return `${pathname}${url.hash}`;
+}
+
+function getHashSectionId(hash: string, sectionIds: SectionId[]) {
+  const sectionId = hash.slice(1) as SectionId;
+  return sectionIds.includes(sectionId) ? sectionId : null;
 }
 
 function getScrollTarget(
@@ -154,12 +159,12 @@ function getScrollTarget(
   }
 
   if (!nextRoute.hash) {
-    return null;
+    return { kind: "top" };
   }
 
-  const sectionId = nextRoute.hash.slice(1) as SectionId;
+  const sectionId = getHashSectionId(nextRoute.hash, sectionIds);
 
-  if (!sectionIds.includes(sectionId)) {
+  if (!sectionId) {
     return null;
   }
 
@@ -169,19 +174,40 @@ function getScrollTarget(
   };
 }
 
+function HomeContent() {
+  return (
+    <main className="page-main">
+      <Hero />
+      {sections
+        .filter((section) => section.id !== "home")
+        .map((section) => (
+          section.id === "projects" ? (
+            <ProjectsSection key={section.id} section={section} />
+          ) : (
+            <EditorialSection key={section.id} section={section} />
+          )
+        ))}
+    </main>
+  );
+}
+
 function App() {
   const sectionIds = useMemo(() => sections.map((section) => section.id), []);
-  const [route, setRoute] = useState<AppRoute>(() => getCurrentRoute());
-  const [activeSection, setActiveSection] = useState<SectionId>("home");
-  const [backgroundHomeRoute, setBackgroundHomeRoute] = useState<AppRoute | null>(
+  const [route, setRoute] = useState<AppRoute>(() => parseRoute(window.location));
+  const [activeSection, setActiveSection] = useState<SectionId>(() => {
+    if (window.location.pathname !== "/") {
+      return "home";
+    }
+
+    return getHashSectionId(window.location.hash, sectionIds) ?? "home";
+  });
+  const [backgroundHomeRoute, setBackgroundHomeRoute] = useState<HomeRoute | null>(
     route.kind === "home" ? route : null,
   );
-  const scrollPositionsRef = useRef<Record<string, number>>({});
   const currentLocationKeyRef = useRef(getLocationKey(window.location));
-  const pendingScrollRef = useRef<ScrollTarget>(
-    getScrollTarget(getCurrentRoute(), window.location, sectionIds, {}),
-  );
-  const isEntryOverlay = route.kind === "entry" && backgroundHomeRoute?.kind === "home";
+  const scrollPositionsRef = useRef<Record<string, number>>({});
+  const pendingScrollRef = useRef<ScrollTarget>(null);
+  const isEntryOverlay = route.kind === "entry" && backgroundHomeRoute !== null;
 
   useEffect(() => {
     if (!("scrollRestoration" in window.history)) {
@@ -216,27 +242,117 @@ function App() {
   }, [isEntryOverlay]);
 
   useEffect(() => {
-    const syncRoute = () => {
+    const syncFromLocation = () => {
       scrollPositionsRef.current[currentLocationKeyRef.current] = window.scrollY;
-      const nextRoute = getCurrentRoute();
+
+      const nextRoute = parseRoute(window.location);
+      const nextKey = getLocationKey(window.location);
       pendingScrollRef.current = getScrollTarget(
         nextRoute,
         window.location,
         sectionIds,
         scrollPositionsRef.current,
       );
-      currentLocationKeyRef.current = getLocationKey(window.location);
+      currentLocationKeyRef.current = nextKey;
+
+      if (nextRoute.kind === "home") {
+        const sectionId = getHashSectionId(nextRoute.hash, sectionIds);
+        setActiveSection(sectionId ?? "home");
+      }
+
       setRoute(nextRoute);
     };
 
-    window.addEventListener("popstate", syncRoute);
-    window.addEventListener("hashchange", syncRoute);
+    window.addEventListener("popstate", syncFromLocation);
 
     return () => {
-      window.removeEventListener("popstate", syncRoute);
-      window.removeEventListener("hashchange", syncRoute);
+      window.removeEventListener("popstate", syncFromLocation);
     };
   }, [sectionIds]);
+
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) {
+        return;
+      }
+
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const anchor = target.closest<HTMLAnchorElement>("a[href]");
+
+      if (!anchor || anchor.target || anchor.hasAttribute("download")) {
+        return;
+      }
+
+      const url = new URL(anchor.href, window.location.href);
+
+      if (url.origin !== window.location.origin) {
+        return;
+      }
+
+      const nextRoute = parseRoute(url);
+      const nextKey = getLocationKey(url);
+
+      event.preventDefault();
+      scrollPositionsRef.current[currentLocationKeyRef.current] = window.scrollY;
+
+      if (nextRoute.kind === "home" && url.pathname === "/") {
+        const sectionId = getHashSectionId(nextRoute.hash, sectionIds);
+
+        if (route.kind === "home") {
+          window.history.pushState(null, "", `${url.pathname}${url.hash}`);
+          currentLocationKeyRef.current = nextKey;
+          setRoute(nextRoute);
+          setActiveSection(sectionId ?? "home");
+
+          if (sectionId) {
+            scrollToSectionHeading(sectionId, "smooth");
+          } else {
+            window.scrollTo({
+              top: 0,
+              behavior: "smooth",
+            });
+          }
+
+          return;
+        }
+
+        pendingScrollRef.current = getScrollTarget(
+          nextRoute,
+          url,
+          sectionIds,
+          scrollPositionsRef.current,
+        );
+        window.history.pushState(null, "", `${url.pathname}${url.hash}`);
+        currentLocationKeyRef.current = nextKey;
+        setActiveSection(sectionId ?? "home");
+        setRoute(nextRoute);
+        return;
+      }
+
+      pendingScrollRef.current =
+        route.kind === "home" && nextRoute.kind === "entry"
+          ? null
+          : getScrollTarget(nextRoute, url, sectionIds, scrollPositionsRef.current);
+      window.history.pushState(null, "", `${url.pathname}${url.hash}`);
+      currentLocationKeyRef.current = nextKey;
+      setRoute(nextRoute);
+    };
+
+    document.addEventListener("click", handleDocumentClick);
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+    };
+  }, [route, sectionIds]);
 
   useEffect(() => {
     if (route.kind !== "home") {
@@ -264,105 +380,19 @@ function App() {
       frameId = window.requestAnimationFrame(updateActiveSection);
     };
 
-    const handleScroll = () => {
-      requestActiveSectionUpdate();
-    };
-
     requestActiveSectionUpdate();
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", requestActiveSectionUpdate, { passive: true });
     window.addEventListener("resize", requestActiveSectionUpdate);
-
-    const handleAnchorClick = (event: MouseEvent) => {
-      const target = event.target;
-
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      const anchor = target.closest<HTMLAnchorElement>('a[href^="#"]');
-
-      if (!anchor) {
-        return;
-      }
-
-      const hash = anchor.getAttribute("href");
-
-      if (!hash || hash === "#") {
-        return;
-      }
-
-      const sectionId = hash.slice(1) as SectionId;
-
-      if (!sectionIds.includes(sectionId)) {
-        return;
-      }
-
-      event.preventDefault();
-      scrollPositionsRef.current[currentLocationKeyRef.current] = window.scrollY;
-      scrollToSectionHeading(sectionId);
-      window.history.pushState(null, "", hash);
-      currentLocationKeyRef.current = getLocationKey(window.location);
-      scrollPositionsRef.current[currentLocationKeyRef.current] = window.scrollY;
-    };
-
-    document.addEventListener("click", handleAnchorClick);
 
     return () => {
       if (frameId !== 0) {
         window.cancelAnimationFrame(frameId);
       }
 
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", requestActiveSectionUpdate);
       window.removeEventListener("resize", requestActiveSectionUpdate);
-      document.removeEventListener("click", handleAnchorClick);
     };
   }, [route.kind, sectionIds]);
-
-  useEffect(() => {
-    const handleDocumentClick = (event: MouseEvent) => {
-      const target = event.target;
-
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      const anchor = target.closest<HTMLAnchorElement>("a[href]");
-
-      if (!anchor || anchor.target || anchor.hasAttribute("download")) {
-        return;
-      }
-
-      const url = new URL(anchor.href, window.location.href);
-
-      if (url.origin !== window.location.origin) {
-        return;
-      }
-
-      const nextRoute = getCurrentRouteFromUrl(url);
-
-      if (nextRoute === null) {
-        return;
-      }
-
-      event.preventDefault();
-      scrollPositionsRef.current[currentLocationKeyRef.current] = window.scrollY;
-      pendingScrollRef.current = getScrollTarget(
-        nextRoute,
-        url,
-        sectionIds,
-        scrollPositionsRef.current,
-      );
-      window.history.pushState(null, "", `${url.pathname}${url.hash}`);
-      currentLocationKeyRef.current = getLocationKey(url);
-      setRoute(nextRoute);
-    };
-
-    document.addEventListener("click", handleDocumentClick);
-
-    return () => {
-      document.removeEventListener("click", handleDocumentClick);
-    };
-  }, [sectionIds]);
 
   useEffect(() => {
     if (isEntryOverlay) {
@@ -397,7 +427,7 @@ function App() {
     });
 
     pendingScrollRef.current = null;
-  }, [isEntryOverlay, route, sectionIds]);
+  }, [isEntryOverlay, route]);
 
   if (route.kind === "entry") {
     const entry = getEntry(route.collectionId, route.slug);
@@ -415,18 +445,7 @@ function App() {
       return (
         <div className="page-shell">
           <SiteHeader activeSection={entry.collectionId} />
-          <main className="page-main" aria-hidden="true">
-            <Hero />
-            {sections
-              .filter((section) => section.id !== "home")
-              .map((section) => (
-                section.id === "projects" ? (
-                  <ProjectsSection key={section.id} section={section} />
-                ) : (
-                  <EditorialSection key={section.id} section={section} />
-                )
-              ))}
-          </main>
+          <HomeContent />
           <div className="entry-overlay" role="dialog" aria-modal="true">
             <div className="entry-overlay__panel">
               <EntryPage entry={entry} />
@@ -456,42 +475,9 @@ function App() {
   return (
     <div className="page-shell">
       <SiteHeader activeSection={activeSection} />
-      <main className="page-main">
-        <Hero />
-        {sections
-          .filter((section) => section.id !== "home")
-          .map((section) => (
-            section.id === "projects" ? (
-              <ProjectsSection key={section.id} section={section} />
-            ) : (
-              <EditorialSection key={section.id} section={section} />
-            )
-          ))}
-      </main>
+      <HomeContent />
     </div>
   );
-}
-
-function getCurrentRouteFromUrl(url: URL) {
-  const pathname = url.pathname.replace(/\/+$/, "") || "/";
-  const entryMatch = pathname.match(/^\/(life|blog)\/([^/]+)$/);
-
-  if (entryMatch) {
-    return {
-      kind: "entry",
-      collectionId: entryMatch[1] as EntryCollectionId,
-      slug: decodeURIComponent(entryMatch[2]),
-    } satisfies AppRoute;
-  }
-
-  if (pathname === "/") {
-    return {
-      kind: "home",
-      hash: url.hash,
-    } satisfies AppRoute;
-  }
-
-  return null;
 }
 
 export default App;

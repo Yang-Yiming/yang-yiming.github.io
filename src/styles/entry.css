@@ -1,7 +1,7 @@
 .entry-overlay {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 5;
   overflow-y: auto;
   padding-top: var(--nav-height);
   background: rgba(247, 248, 250, 0.82);
