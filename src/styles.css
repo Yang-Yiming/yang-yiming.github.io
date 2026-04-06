@@ -379,6 +379,12 @@ select {
     gap: 1.4rem;
 }
 
+.section-header--projects {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr);
+    align-items: end;
+    gap: clamp(1.5rem, 4vw, 4rem);
+}
+
 .section-heading {
     display: grid;
     align-content: start;
@@ -394,6 +400,20 @@ select {
 .section-body {
     display: grid;
     gap: 1rem;
+}
+
+.section-source-label,
+.project-card__meta,
+.projects-group__title {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.section-source-label {
+    color: var(--text-soft);
 }
 
 .section-list {
@@ -422,6 +442,163 @@ select {
     gap: 0.4rem;
 }
 
+.projects-groups {
+    display: grid;
+    gap: 3.4rem;
+}
+
+.projects-group {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.projects-group__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 1.2rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.projects-group__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.project-card {
+    display: grid;
+    gap: 1.1rem;
+    min-height: 100%;
+    padding: 1rem 1.05rem 1.05rem;
+    border: 1px solid var(--line);
+    background: rgba(251, 252, 253, 0.82);
+    border-radius: 0.75rem;
+    transition:
+        background-color var(--transition),
+        border-color var(--transition),
+        color var(--transition),
+        transform var(--transition);
+}
+
+.project-card:hover,
+.project-card:focus-visible {
+    background: rgba(251, 252, 253, 0.98);
+    border-color: var(--line-strong);
+    transform: translateY(-1px);
+}
+
+.project-card__header,
+.project-card__heading,
+.project-card__meta,
+.project-card__footer {
+    display: flex;
+    align-items: center;
+}
+
+.project-card__header,
+.project-card__footer {
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.project-card__heading,
+.project-card__meta {
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.project-card__meta {
+    flex-wrap: wrap;
+}
+
+.project-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-soft);
+}
+
+.project-card__icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.project-card__badge {
+    padding: 0.14rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+.project-card__body {
+    display: grid;
+    align-content: start;
+}
+
+.project-card__title {
+    margin: 0;
+    font-family: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+    font-size: 0.96rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-card__description {
+    margin: 0;
+    min-height: 4.8rem;
+    color: var(--text-soft);
+    font-size: 0.9rem;
+    line-height: 1.7;
+}
+
+.project-card__footer {
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--line);
+}
+
+.project-card__meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+}
+
+.project-card__meta--secondary {
+    justify-content: flex-end;
+    color: var(--text-muted);
+}
+
+.project-card__language-dot {
+    width: 0.62rem;
+    height: 0.62rem;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.project-card__star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0.95rem;
+    height: 0.95rem;
+    color: var(--text-muted);
+    transform: translateY(-0.01rem);
+}
+
+.project-card__star svg {
+    width: 100%;
+    height: 100%;
+}
+
 .list-row__title {
     font-size: clamp(1.25rem, 2vw, 1.7rem);
     line-height: 1.08;
@@ -430,9 +607,11 @@ select {
 .hero__title > :first-child,
 .section-title > :first-child,
 .list-row__title > :first-child,
+.project-card__title > :first-child,
 .hero__summary > :first-child,
 .hero__body > :first-child,
 .section-intro > :first-child,
+.project-card__description > :first-child,
 .list-row__description > :first-child {
     margin-top: 0;
 }
@@ -440,9 +619,11 @@ select {
 .hero__title > :last-child,
 .section-title > :last-child,
 .list-row__title > :last-child,
+.project-card__title > :last-child,
 .hero__summary > :last-child,
 .hero__body > :last-child,
 .section-intro > :last-child,
+.project-card__description > :last-child,
 .list-row__description > :last-child {
     margin-bottom: 0;
 }
@@ -450,6 +631,7 @@ select {
 .hero__summary p,
 .hero__body p,
 .section-intro p,
+.project-card__description p,
 .list-row__description p {
     margin: 0 0 0.9rem;
 }
@@ -457,9 +639,11 @@ select {
 .hero__summary a,
 .hero__body a,
 .section-intro a,
+.project-card__description a,
 .list-row__description a,
 .hero__title a,
 .section-title a,
+.project-card__title a,
 .list-row__title a {
     color: var(--accent);
     text-decoration: underline;
@@ -472,6 +656,8 @@ select {
 .hero__body ol,
 .section-intro ul,
 .section-intro ol,
+.project-card__description ul,
+.project-card__description ol,
 .list-row__description ul,
 .list-row__description ol {
     margin: 0.35rem 0 0.95rem;
@@ -481,6 +667,7 @@ select {
 .hero__summary li,
 .hero__body li,
 .section-intro li,
+.project-card__description li,
 .list-row__description li {
     margin: 0.2rem 0;
 }
@@ -488,9 +675,11 @@ select {
 .hero__summary code,
 .hero__body code,
 .section-intro code,
+.project-card__description code,
 .list-row__description code,
 .hero__title code,
 .section-title code,
+.project-card__title code,
 .list-row__title code {
     padding: 0.08rem 0.36rem;
     border: 1px solid var(--line);
@@ -501,6 +690,7 @@ select {
 .hero__summary pre,
 .hero__body pre,
 .section-intro pre,
+.project-card__description pre,
 .list-row__description pre {
     margin: 0.55rem 0 1rem;
     padding: 0.85rem 0.95rem;
@@ -512,6 +702,7 @@ select {
 .hero__summary pre code,
 .hero__body pre code,
 .section-intro pre code,
+.project-card__description pre code,
 .list-row__description pre code {
     padding: 0;
     border: 0;
@@ -525,6 +716,9 @@ select {
 .section-title h1,
 .section-title h2,
 .section-title h3,
+.project-card__title h1,
+.project-card__title h2,
+.project-card__title h3,
 .list-row__title h1,
 .list-row__title h2,
 .list-row__title h3 {
@@ -551,7 +745,9 @@ select {
 
     .hero__masthead,
     .hero__columns,
-    .editorial-section {
+    .editorial-section,
+    .section-header--projects,
+    .projects-group__list {
         grid-template-columns: 1fr;
     }
 
@@ -590,5 +786,19 @@ select {
     .site-nav__link {
         padding-left: 0.55rem;
         padding-right: 0.55rem;
+    }
+
+    .project-card__meta {
+        gap: 0.7rem;
+        flex-wrap: wrap;
+    }
+
+    .project-card__footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .project-card__meta--secondary {
+        justify-content: flex-start;
     }
 }

@@ -12,6 +12,9 @@ Keep content in `src/content.ts`, not scattered through components. Keep visual 
 ## Workflow
 Use `bun` for all local work in this repository. Do not switch package managers.
 
+## Clarification
+For any feature work, continue asking clarifying questions until the goal, scope, constraints, and acceptance criteria are fully explicit. Do not proceed on unresolved assumptions.
+
 ## Design Direction
 This site should stay within an editorial minimal language:
 

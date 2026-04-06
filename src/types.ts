@@ -13,6 +13,27 @@ export interface SectionItem {
   href?: string;
 }
 
+export interface ProjectImage {
+  src: string;
+  alt: string;
+}
+
+export interface GitHubProject {
+  title: string;
+  description: string;
+  href: string;
+  year: string;
+  stars?: string;
+  language?: string;
+  visibility?: "Public" | "Private";
+  image?: ProjectImage;
+}
+
+export interface GitHubProjectGroup {
+  title: string;
+  items: GitHubProject[];
+}
+
 export interface HeroImage {
   src: string;
   alt: string;
@@ -25,5 +46,7 @@ export interface SectionContent {
   kicker: string;
   title: string;
   intro: string;
+  sourceLabel?: string;
   items?: SectionItem[];
+  projectGroups?: GitHubProjectGroup[];
 }
