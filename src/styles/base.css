@@ -97,6 +97,39 @@ select {
     letter-spacing: -0.03em;
 }
 
+.section-heading-link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    width: fit-content;
+}
+
+.section-heading-link__anchor {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transform: translateX(-0.2rem);
+    transition:
+        opacity var(--transition),
+        color var(--transition),
+        transform var(--transition);
+}
+
+.section-heading-link:hover .section-heading-link__anchor,
+.section-heading-link:focus-visible .section-heading-link__anchor,
+.section-heading-link:target .section-heading-link__anchor {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.section-heading-link:hover .hero__title,
+.section-heading-link:hover .section-title,
+.section-heading-link:focus-visible .hero__title,
+.section-heading-link:focus-visible .section-title {
+    color: var(--accent);
+}
+
 .hero__summary,
 .hero__body,
 .section-intro,

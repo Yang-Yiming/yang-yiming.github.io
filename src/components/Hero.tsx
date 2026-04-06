@@ -61,10 +61,19 @@ export function Hero() {
         <div className="hero__lead">
           <p className="section-kicker">{home.kicker}</p>
           <p className="hero__availability">{siteMeta.accentLabel}</p>
-          <h1
-            className="hero__title"
-            dangerouslySetInnerHTML={renderMarkdown(home.title)}
-          />
+          <a
+            aria-label={`Link to ${home.navLabel} section`}
+            className="section-heading-link section-heading-link--hero"
+            href={`#${home.id}`}
+          >
+            <span aria-hidden="true" className="section-heading-link__anchor">
+              #
+            </span>
+            <h1
+              className="hero__title"
+              dangerouslySetInnerHTML={renderMarkdown(home.title)}
+            />
+          </a>
           <div
             className="hero__summary"
             dangerouslySetInnerHTML={renderMarkdown(siteMeta.summary)}

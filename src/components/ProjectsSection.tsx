@@ -12,10 +12,19 @@ export function ProjectsSection({ section }: ProjectsSectionProps) {
       <div className="section-header section-header--projects">
         <div className="section-heading">
           <p className="section-kicker">{section.kicker}</p>
-          <h2
-            className="section-title"
-            dangerouslySetInnerHTML={renderMarkdown(section.title)}
-          />
+          <a
+            aria-label={`Link to ${section.navLabel} section`}
+            className="section-heading-link"
+            href={`#${section.id}`}
+          >
+            <span aria-hidden="true" className="section-heading-link__anchor">
+              #
+            </span>
+            <h2
+              className="section-title"
+              dangerouslySetInnerHTML={renderMarkdown(section.title)}
+            />
+          </a>
         </div>
 
         <div className="section-body">
