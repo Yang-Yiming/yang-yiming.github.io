@@ -1,3 +1,25 @@
+.entry-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  overflow-y: auto;
+  padding-top: var(--nav-height);
+  background: rgba(247, 248, 250, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+.entry-overlay__panel {
+  min-height: calc(100vh - var(--nav-height));
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(63, 98, 136, 0.08),
+      transparent 32%
+    ),
+    linear-gradient(180deg, #fbfcfd 0%, var(--bg) 100%);
+  border-top: 1px solid var(--line);
+}
+
 .entry-page {
   display: grid;
   gap: 2.75rem;

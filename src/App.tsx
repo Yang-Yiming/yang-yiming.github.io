@@ -173,11 +173,47 @@ function App() {
   const sectionIds = useMemo(() => sections.map((section) => section.id), []);
   const [route, setRoute] = useState<AppRoute>(() => getCurrentRoute());
   const [activeSection, setActiveSection] = useState<SectionId>("home");
+  const [backgroundHomeRoute, setBackgroundHomeRoute] = useState<AppRoute | null>(
+    route.kind === "home" ? route : null,
+  );
   const scrollPositionsRef = useRef<Record<string, number>>({});
   const currentLocationKeyRef = useRef(getLocationKey(window.location));
   const pendingScrollRef = useRef<ScrollTarget>(
     getScrollTarget(getCurrentRoute(), window.location, sectionIds, {}),
   );
+  const isEntryOverlay = route.kind === "entry" && backgroundHomeRoute?.kind === "home";
+
+  useEffect(() => {
+    if (!("scrollRestoration" in window.history)) {
+      return;
+    }
+
+    const previousValue = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    return () => {
+      window.history.scrollRestoration = previousValue;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (route.kind === "home") {
+      setBackgroundHomeRoute(route);
+    }
+  }, [route]);
+
+  useEffect(() => {
+    if (!isEntryOverlay) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isEntryOverlay]);
 
   useEffect(() => {
     const syncRoute = () => {
@@ -329,6 +365,11 @@ function App() {
   }, [sectionIds]);
 
   useEffect(() => {
+    if (isEntryOverlay) {
+      pendingScrollRef.current = null;
+      return;
+    }
+
     const pendingScroll = pendingScrollRef.current;
 
     if (!pendingScroll) {
@@ -339,12 +380,14 @@ function App() {
       if (pendingScroll.kind === "preserve") {
         window.scrollTo({
           top: pendingScroll.top,
+          behavior: "auto",
         });
       }
 
       if (pendingScroll.kind === "top") {
         window.scrollTo({
           top: 0,
+          behavior: "auto",
         });
       }
 
@@ -354,7 +397,7 @@ function App() {
     });
 
     pendingScrollRef.current = null;
-  }, [route, sectionIds]);
+  }, [isEntryOverlay, route, sectionIds]);
 
   if (route.kind === "entry") {
     const entry = getEntry(route.collectionId, route.slug);
@@ -364,6 +407,31 @@ function App() {
         <div className="page-shell">
           <SiteHeader activeSection={route.collectionId} />
           <NotFoundPage />
+        </div>
+      );
+    }
+
+    if (isEntryOverlay) {
+      return (
+        <div className="page-shell">
+          <SiteHeader activeSection={entry.collectionId} />
+          <main className="page-main" aria-hidden="true">
+            <Hero />
+            {sections
+              .filter((section) => section.id !== "home")
+              .map((section) => (
+                section.id === "projects" ? (
+                  <ProjectsSection key={section.id} section={section} />
+                ) : (
+                  <EditorialSection key={section.id} section={section} />
+                )
+              ))}
+          </main>
+          <div className="entry-overlay" role="dialog" aria-modal="true">
+            <div className="entry-overlay__panel">
+              <EntryPage entry={entry} />
+            </div>
+          </div>
         </div>
       );
     }
