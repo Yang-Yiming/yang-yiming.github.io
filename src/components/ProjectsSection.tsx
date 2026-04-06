@@ -9,7 +9,7 @@ interface ProjectsSectionProps {
 export function ProjectsSection({ section }: ProjectsSectionProps) {
   return (
     <section className="editorial-section section-frame" id={section.id}>
-      <div className="section-header section-header--projects">
+      <div className="section-header">
         <div className="section-heading">
           <p className="section-kicker" data-section-anchor={section.id}>
             {section.kicker}

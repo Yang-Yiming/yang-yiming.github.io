@@ -9,12 +9,6 @@
     gap: 1.4rem;
 }
 
-.section-header--projects {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr);
-    align-items: end;
-    gap: clamp(1.5rem, 4vw, 4rem);
-}
-
 .section-heading {
     display: grid;
     align-content: start;
@@ -81,8 +75,7 @@
 }
 
 @media (max-width: 900px) {
-    .editorial-section,
-    .section-header--projects {
+    .editorial-section {
         grid-template-columns: 1fr;
     }
 }
