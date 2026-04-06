@@ -6,21 +6,13 @@ export const githubProjectGroups = [
     items: [
       {
         title: "OmniWM",
-        description: "MacOS Niri and Hyprland inspired tiling window manager.",
+        description:
+          "A macOS tiling window manager inspired by Niri and Hyprland.\n \
+        Added support for human-readable `settings.json` output and incremental export options.",
         href: "https://github.com/BarutSRB/OmniWM",
         year: "2026",
         stars: "1.2k",
-        language: "C++",
-        visibility: "Public",
-      },
-      {
-        title: "Community Tooling Placeholder",
-        description:
-          "A second contributor-facing slot for a project you supported through features, issue resolution, or maintenance help.",
-        href: "https://github.com/Yang-Yiming",
-        year: "2025",
-        stars: "64",
-        language: "TypeScript",
+        language: "Swift",
         visibility: "Public",
       },
     ],
@@ -29,22 +21,34 @@ export const githubProjectGroups = [
     title: "Me as a maintainer",
     items: [
       {
-        title: "Maintained Project Placeholder",
+        title: "CC-Router-Lite",
         description:
-          "A primary repository you own or actively steer, described with a concise summary of purpose, scope, and current maturity.",
-        href: "https://github.com/Yang-Yiming",
+          "A lightweight Claude Code / Codex backend switcher that works by automatically editing config files.\n\
+          Includes a CLI and a polished Ratatui TUI.",
+        href: "https://github.com/Yang-Yiming/cc-router-lite",
         year: "2026",
-        stars: "42",
-        language: "TypeScript",
+        // stars: "0",
+        language: "Rust",
         visibility: "Public",
       },
       {
-        title: "Personal Build Placeholder",
+        title: "AppTossLite",
         description:
-          "Reserve this slot for a smaller self-directed build that still deserves a clear write-up and direct repository link.",
-        href: "https://github.com/Yang-Yiming",
-        year: "2024",
-        language: "Bun",
+          "Manage your Xcode projects and IPAs, and build/deploy them to an iPhone with a single command.\n\
+          Supports both a CLI and a Ratatui TUI.",
+        href: "https://github.com/Yang-Yiming/AppTossLite",
+        year: "2026",
+        language: "Rust",
+        visibility: "Public",
+      },
+      {
+        title: "Zhicheng Warehouse Manager",
+        description:
+          "A WeChat Mini Program for SUSTech Zhicheng College to manage warehouse inventory.",
+        href: "https://github.com/Yang-Yiming/Zhicheng-Warehouse-Manager",
+        year: "2026",
+        // stars: "0",
+        language: "Javascript",
         visibility: "Public",
       },
     ],
