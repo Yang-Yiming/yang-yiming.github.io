@@ -40,9 +40,9 @@ export const sections: SectionContent[] = [
     kicker: "Index / 03",
     title: "Research",
     intro:
-      "Now being an undergraduate and willing to do some contribution to the research community.\n\
-      My interest are in Auto Regressive Multimodal-LLMs, and I hopes to find a way that go beyond\
-      language to achieve more",
+      "Now I am an undergraduate and hope to contribute to the research community.\n\
+      My interests lie in autoregressive multimodal LLMs, and I aim to explore ways \
+      to go beyond language toward broader capabilities.",
     items: [
       // {
       //   title: "Theme Placeholder",
@@ -65,7 +65,7 @@ export const sections: SectionContent[] = [
     title: "Things I do and love",
     intro:
       "Not everything belongs in a project log.\
-      This section leaves room for my hobbies, habits, books, music.",
+      This section leaves room for my hobbies, habits, books, music, etc.",
     items: getEntrySectionItems("life"),
   },
   {
@@ -81,8 +81,7 @@ export const sections: SectionContent[] = [
     id: "fun",
     navLabel: "Fun!",
     kicker: "Index / 06",
-    title:
-      "Odd links, playful prototypes, and the less reasonable side of curiosity.",
+    title: "Just some fun things.",
     intro:
       "A closing section for experiments that are faster, lighter, stranger, or simply enjoyable enough to keep around.",
     items: [

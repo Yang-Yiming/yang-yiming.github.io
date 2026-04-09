@@ -4,7 +4,7 @@ export const siteMeta = {
   name: "Yang Yiming",
   role: "Student · Data Science",
   summary:
-    "I'm an undergraduate student at SUSTech, studying Computer Science and Artificial Intelligence. Interested in Multimodal LLMs." +
+    "I'm an undergraduate student at SUSTech, studying Data Science. Interested in Multimodal LLMs and Computer Science." +
     "I love old-school street dance and bass-heavy music. " +
     "Building tools with AI whenever I have a need",
 

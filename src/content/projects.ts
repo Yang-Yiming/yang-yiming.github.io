@@ -7,11 +7,11 @@ export const githubProjectGroups = [
       {
         title: "OmniWM",
         description:
-          "A macOS tiling window manager inspired by Niri and Hyprland.\n \
-        Added support for human-readable `settings.json` output and incremental export options.",
+          "A macOS tiling window manager inspired by Niri and Hyprland.\n\
+        Added support for human-readable `settings.json` output and optional incremental exports.",
         href: "https://github.com/BarutSRB/OmniWM",
         year: "2026",
-        stars: "1.2k",
+        stars: "1.3k",
         language: "Swift",
         visibility: "Public",
       },
@@ -34,7 +34,7 @@ export const githubProjectGroups = [
       {
         title: "AppTossLite",
         description:
-          "Manage your Xcode projects and IPAs, and build/deploy them to an iPhone with a single command.\n\
+          "Manage Xcode projects and IPAs, and build/deploy them to an iPhone with a single command.\n\
           Supports both a CLI and a Ratatui TUI.",
         href: "https://github.com/Yang-Yiming/AppTossLite",
         year: "2026",

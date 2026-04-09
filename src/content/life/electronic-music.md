@@ -6,23 +6,20 @@ date: 2026-04-05
 kicker: Life / 02
 ---
 
-This is another sample entry powered by the same markdown pipeline.
+# My Music Life
 
-Use this page for anything that does not belong in your project history but still says something real about you:
+I love Electronic Music, especially [Dubstep](https://en.wikipedia.org/wiki/Dubstep), [House](https://en.wikipedia.org/wiki/House_music) and [Drum and Bass](https://en.wikipedia.org/wiki/Drum_and_bass).
 
-- scenes you enjoy
-- subgenres you keep returning to
-- favorite sets
-- tracks that changed your taste
+I used to love hearing Pop Music and [Future Bass](https://en.wikipedia.org/wiki/Future_bass) only, but I always felt like something was missing. One afternoon in 2021, while I was playing Terraria and had music randomly playing in my earphones, a Drum and Bass track came on. The heavy, deep bass immediately caught my attention.
 
-## Image example
+From that moment on, I started spending most of my time exploring these genres and gradually discovered many more along the way.
 
-If you want to place an image in the body, add the file under `public/assets/` and reference it directly:
+In the summer of 2024, I bought a DDJ-FLX4 and began learning how to DJ.
 
-```md
-![Booth photo](/assets/life/electronic-music/booth-photo.jpg)
-```
+Now, in my free time after classes, I enjoy listening to music to relax, and when I have more time, I like to DJ for fun.
 
-## Why this stays off the homepage
+---
 
-The homepage should remain an index. This page is where detail, texture, and longer reflection can live without breaking that structure.
+# Favorite Artists & Songs
+
+...
