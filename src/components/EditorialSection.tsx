@@ -6,6 +6,8 @@ interface EditorialSectionProps {
 }
 
 export function EditorialSection({ section }: EditorialSectionProps) {
+  const hasItems = Boolean(section.items?.length);
+
   return (
     <section className="editorial-section section-frame" id={section.id}>
       <div className="section-header">
@@ -36,39 +38,41 @@ export function EditorialSection({ section }: EditorialSectionProps) {
         </div>
       </div>
 
-      <div className="section-list">
-        {section.items?.map((item) => (
-          item.href ? (
-            <a key={item.title} className="list-row list-row--link" href={item.href}>
-              <p className="list-row__meta">{item.meta}</p>
-              <div className="list-row__body">
-                <h3
-                  className="list-row__title"
-                  dangerouslySetInnerHTML={renderMarkdown(item.title)}
-                />
-                <div
-                  className="list-row__description"
-                  dangerouslySetInnerHTML={renderMarkdown(item.description)}
-                />
-              </div>
-            </a>
-          ) : (
-            <article key={item.title} className="list-row">
-              <p className="list-row__meta">{item.meta}</p>
-              <div className="list-row__body">
-                <h3
-                  className="list-row__title"
-                  dangerouslySetInnerHTML={renderMarkdown(item.title)}
-                />
-                <div
-                  className="list-row__description"
-                  dangerouslySetInnerHTML={renderMarkdown(item.description)}
-                />
-              </div>
-            </article>
-          )
-        ))}
-      </div>
+      {hasItems ? (
+        <div className="section-list">
+          {section.items?.map((item) => (
+            item.href ? (
+              <a key={item.title} className="list-row list-row--link" href={item.href}>
+                <p className="list-row__meta">{item.meta}</p>
+                <div className="list-row__body">
+                  <h3
+                    className="list-row__title"
+                    dangerouslySetInnerHTML={renderMarkdown(item.title)}
+                  />
+                  <div
+                    className="list-row__description"
+                    dangerouslySetInnerHTML={renderMarkdown(item.description)}
+                  />
+                </div>
+              </a>
+            ) : (
+              <article key={item.title} className="list-row">
+                <p className="list-row__meta">{item.meta}</p>
+                <div className="list-row__body">
+                  <h3
+                    className="list-row__title"
+                    dangerouslySetInnerHTML={renderMarkdown(item.title)}
+                  />
+                  <div
+                    className="list-row__description"
+                    dangerouslySetInnerHTML={renderMarkdown(item.description)}
+                  />
+                </div>
+              </article>
+            )
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
