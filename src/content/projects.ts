@@ -11,7 +11,7 @@ export const githubProjectGroups = [
         Added support for human-readable `settings.json` output and optional incremental exports.",
         href: "https://github.com/BarutSRB/OmniWM",
         year: "2026",
-        stars: "1.3k",
+        stars: "1.5k",
         language: "Swift",
         visibility: "Public",
       },

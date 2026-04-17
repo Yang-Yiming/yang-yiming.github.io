@@ -8,21 +8,8 @@ export const sections: SectionContent[] = [
     navLabel: "Home",
     kicker: "Index / 01",
     title: "Hello, I'm Yang Yiming",
-    intro: "This is the homepage, showing the indexes and entries",
-    items: [
-      {
-        title: "Current focus",
-        meta: "2026",
-        description:
-          "Designing digital systems with an editorial eye and a builder's sense of structure.",
-      },
-      {
-        title: "Selected direction",
-        meta: "Projects + Research",
-        description:
-          "Bridging product execution, visual language, and technical experimentation.",
-      },
-    ],
+    intro:
+      "**SUSTech** · Shenzhen, China\n\n**Data Science** Undergraduate · Class of 2024\n\n**GPA** 3.92/4.00 · **Rank** 3/59\n\n**Key coursework**: Mathematical Analysis, Advanced Linear Algebra, Data Structure and Algorithm Analysis (H), Foundation of Probability, Artificial Intelligence.\n\n**Programming**: Python, Java, LaTeX, a bit Rust",
   },
   {
     id: "projects",

@@ -42,6 +42,12 @@ export interface HeroImage {
   caption: string;
 }
 
+export interface SiteLink {
+  label: string;
+  href: string;
+  icon?: "github" | "email";
+}
+
 export interface SectionContent {
   id: SectionId;
   navLabel: string;

@@ -1,12 +1,55 @@
 import { useEffect, useMemo, useState } from "react";
 import { sections, siteMeta } from "../content";
 import { renderMarkdown } from "../lib/markdown";
+import type { SiteLink } from "../types";
 
 const heroRotationDelay = 4800;
+
+function LinkIcon({ icon }: { icon?: SiteLink["icon"] }) {
+  if (icon === "github") {
+    return (
+      <svg
+        aria-hidden="true"
+        className="hero__link-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M9 18c-4 1.5-4-2-6-2" />
+        <path d="M15 21v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 19.1 3.77 5.07 5.07 0 0 0 19 1s-1.18-.35-4 1.48a13.38 13.38 0 0 0-6 0C6.18.65 5 1 5 1a5.07 5.07 0 0 0-.1 2.77A5.44 5.44 0 0 0 3.5 7.52c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 17.13V21" />
+      </svg>
+    );
+  }
+
+  if (icon === "email") {
+    return (
+      <svg
+        aria-hidden="true"
+        className="hero__link-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="m4 7 8 6 8-6" />
+      </svg>
+    );
+  }
+
+  return null;
+}
 
 export function Hero() {
   const home = sections[0];
   const heroImages = siteMeta.heroImages;
+  const hasLocation = Boolean(siteMeta.location.trim());
+  const hasNotes = Boolean(home.items?.length);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [failedSources, setFailedSources] = useState<string[]>([]);
 
@@ -56,7 +99,10 @@ export function Hero() {
   const currentImage = availableImages[currentImageIndex];
 
   return (
-    <section className="hero section-frame" id="home">
+    <section
+      className={`hero section-frame${hasNotes ? "" : " hero--compact"}`}
+      id="home"
+    >
       <div className="hero__masthead">
         <div className="hero__lead">
           <p className="section-kicker" data-section-anchor={home.id}>
@@ -113,17 +159,19 @@ export function Hero() {
         )}
       </div>
 
-      <div className="hero__columns">
+      <div className={`hero__columns${hasNotes ? "" : " hero__columns--compact"}`}>
         <div className="hero__column">
           <p className="section-kicker">Overview</p>
           <div
             className="hero__body"
             dangerouslySetInnerHTML={renderMarkdown(home.intro)}
           />
-          <div
-            className="hero__body"
-            dangerouslySetInnerHTML={renderMarkdown(siteMeta.location)}
-          />
+          {hasLocation ? (
+            <div
+              className="hero__body"
+              dangerouslySetInnerHTML={renderMarkdown(siteMeta.location)}
+            />
+          ) : null}
         </div>
 
         <div className="hero__column hero__column--index">
@@ -153,30 +201,35 @@ export function Hero() {
                 target="_blank"
                 rel="noreferrer"
               >
-                {link.label}
+                <span className="hero__link-label">
+                  <LinkIcon icon={link.icon} />
+                  <span>{link.label}</span>
+                </span>
               </a>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="hero__notes" aria-label="Home highlights">
-        {home.items?.map((item) => (
-          <article key={item.title} className="list-row">
-            <p className="list-row__meta">{item.meta}</p>
-            <div className="list-row__body">
-              <h2
-                className="list-row__title"
-                dangerouslySetInnerHTML={renderMarkdown(item.title)}
-              />
-              <div
-                className="list-row__description"
-                dangerouslySetInnerHTML={renderMarkdown(item.description)}
-              />
-            </div>
-          </article>
-        ))}
-      </div>
+      {hasNotes ? (
+        <div className="hero__notes" aria-label="Home highlights">
+          {home.items?.map((item) => (
+            <article key={item.title} className="list-row">
+              <p className="list-row__meta">{item.meta}</p>
+              <div className="list-row__body">
+                <h2
+                  className="list-row__title"
+                  dangerouslySetInnerHTML={renderMarkdown(item.title)}
+                />
+                <div
+                  className="list-row__description"
+                  dangerouslySetInnerHTML={renderMarkdown(item.description)}
+                />
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

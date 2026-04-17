@@ -190,6 +190,15 @@ select {
     text-underline-offset: 0.14em;
 }
 
+.hero__summary strong,
+.hero__body strong,
+.section-intro strong,
+.project-card__description strong,
+.list-row__description strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
 .hero__summary ul,
 .hero__summary ol,
 .hero__body ul,
@@ -210,6 +219,16 @@ select {
 .project-card__description li,
 .list-row__description li {
     margin: 0.2rem 0;
+}
+
+.hero__summary hr,
+.hero__body hr,
+.section-intro hr,
+.project-card__description hr,
+.list-row__description hr {
+    margin: 1.2rem 0;
+    border: 0;
+    border-top: 1px solid var(--line);
 }
 
 .hero__summary code,
