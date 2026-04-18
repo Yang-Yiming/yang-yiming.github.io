@@ -33,6 +33,10 @@
     gap: 0.95rem;
 }
 
+.entry-page--loading {
+    min-height: 50vh;
+}
+
 .entry-page__backlink {
     display: inline-flex;
     align-items: center;

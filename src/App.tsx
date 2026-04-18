@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { EntryPage } from "./components/EntryPage";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { EditorialSection } from "./components/EditorialSection";
 import { Hero } from "./components/Hero";
 import { NotFoundPage } from "./components/NotFoundPage";
@@ -9,6 +8,11 @@ import { getEntry, sections } from "./content";
 import type { EntryCollectionId, SectionId } from "./types";
 
 const anchorOffset = 18;
+const EntryPage = lazy(() =>
+  import("./components/EntryPage").then((module) => ({
+    default: module.EntryPage,
+  })),
+);
 
 type HomeRoute = { kind: "home"; hash: string };
 type EntryRoute = {
@@ -214,6 +218,16 @@ function HomeContent() {
             <EditorialSection key={section.id} section={section} />
           )
         ))}
+    </main>
+  );
+}
+
+function EntryPageLoader() {
+  return (
+    <main className="page-main">
+      <article className="entry-page entry-page--loading" aria-busy="true">
+        <p className="section-kicker">Loading</p>
+      </article>
     </main>
   );
 }
@@ -501,7 +515,9 @@ function App() {
           <HomeContent />
           <div className="entry-overlay" role="dialog" aria-modal="true">
             <div className="entry-overlay__panel">
-              <EntryPage entry={entry} />
+              <Suspense fallback={<EntryPageLoader />}>
+                <EntryPage entry={entry} />
+              </Suspense>
             </div>
           </div>
         </div>
@@ -511,7 +527,9 @@ function App() {
     return (
       <div className="page-shell">
         <SiteHeader activeSection={entry.collectionId} />
-        <EntryPage entry={entry} />
+        <Suspense fallback={<EntryPageLoader />}>
+          <EntryPage entry={entry} />
+        </Suspense>
       </div>
     );
   }

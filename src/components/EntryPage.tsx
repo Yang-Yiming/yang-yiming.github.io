@@ -1,4 +1,4 @@
-import { renderMarkdown } from "../lib/markdown";
+import { renderEntryMarkdown } from "../lib/entryMarkdown";
 import type { EntryRecord } from "../types";
 
 interface EntryPageProps {
@@ -27,7 +27,7 @@ export function EntryPage({ entry }: EntryPageProps) {
 
         <div
           className="entry-page__content"
-          dangerouslySetInnerHTML={renderMarkdown(entry.content)}
+          dangerouslySetInnerHTML={renderEntryMarkdown(entry.content)}
         />
       </article>
     </main>
