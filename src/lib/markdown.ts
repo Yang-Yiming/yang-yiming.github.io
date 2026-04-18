@@ -1,13 +1,28 @@
 import DOMPurify from "dompurify";
-import { marked } from "marked";
+import remarkBreaks from "remark-breaks";
+import rehypeKatex from "rehype-katex";
+import rehypeStringify from "rehype-stringify";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import remarkParse from "remark-parse";
+import remarkRehype from "remark-rehype";
+import { unified } from "unified";
 
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
+const markdownProcessor = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkBreaks)
+  .use(remarkMath)
+  .use(remarkRehype, {
+    allowDangerousHtml: true,
+  })
+  .use(rehypeKatex)
+  .use(rehypeStringify, {
+    allowDangerousHtml: true,
+  });
 
 export function renderMarkdown(markdown: string) {
-  const rawHtml = marked.parse(markdown) as string;
+  const rawHtml = String(markdownProcessor.processSync(markdown));
   return {
     __html: DOMPurify.sanitize(rawHtml),
   };

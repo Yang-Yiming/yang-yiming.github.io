@@ -14,6 +14,7 @@ type HomeRoute = { kind: "home"; hash: string };
 type EntryRoute = {
   kind: "entry";
   collectionId: EntryCollectionId;
+  hash: string;
   slug: string;
 };
 type NotFoundRoute = { kind: "notFound" };
@@ -21,6 +22,7 @@ type AppRoute = HomeRoute | EntryRoute | NotFoundRoute;
 
 type ScrollTarget =
   | { kind: "preserve"; top: number }
+  | { kind: "fragment"; id: string }
   | { kind: "section"; sectionId: SectionId }
   | { kind: "top" }
   | null;
@@ -107,6 +109,19 @@ function scrollToSectionHeading(
   });
 }
 
+function scrollToFragment(id: string, behavior: ScrollBehavior = "smooth") {
+  const target = document.getElementById(id);
+
+  if (!target) {
+    return;
+  }
+
+  target.scrollIntoView({
+    behavior,
+    block: "start",
+  });
+}
+
 function parseRoute(url: URL | Location): AppRoute {
   const pathname = url.pathname.replace(/\/+$/, "") || "/";
   const entryMatch = pathname.match(/^\/(life|blog)\/([^/]+)$/);
@@ -115,6 +130,7 @@ function parseRoute(url: URL | Location): AppRoute {
     return {
       kind: "entry",
       collectionId: entryMatch[1] as EntryCollectionId,
+      hash: url.hash,
       slug: decodeURIComponent(entryMatch[2]),
     };
   }
@@ -154,7 +170,18 @@ function getScrollTarget(
     };
   }
 
-  if (nextRoute.kind === "entry" || nextRoute.kind === "notFound") {
+  if (nextRoute.kind === "entry") {
+    if (nextRoute.hash) {
+      return {
+        kind: "fragment",
+        id: decodeURIComponent(nextRoute.hash.slice(1)),
+      };
+    }
+
+    return { kind: "top" };
+  }
+
+  if (nextRoute.kind === "notFound") {
     return { kind: "top" };
   }
 
@@ -304,6 +331,28 @@ function App() {
       event.preventDefault();
       scrollPositionsRef.current[currentLocationKeyRef.current] = window.scrollY;
 
+      if (
+        route.kind === "entry" &&
+        nextRoute.kind === "entry" &&
+        route.collectionId === nextRoute.collectionId &&
+        route.slug === nextRoute.slug
+      ) {
+        window.history.pushState(null, "", `${url.pathname}${url.hash}`);
+        currentLocationKeyRef.current = nextKey;
+        setRoute(nextRoute);
+
+        if (nextRoute.hash) {
+          scrollToFragment(decodeURIComponent(nextRoute.hash.slice(1)), "smooth");
+        } else {
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+          });
+        }
+
+        return;
+      }
+
       if (nextRoute.kind === "home" && url.pathname === "/") {
         const sectionId = getHashSectionId(nextRoute.hash, sectionIds);
 
@@ -419,6 +468,10 @@ function App() {
           top: 0,
           behavior: "auto",
         });
+      }
+
+      if (pendingScroll.kind === "fragment") {
+        scrollToFragment(pendingScroll.id, "auto");
       }
 
       if (pendingScroll.kind === "section") {
