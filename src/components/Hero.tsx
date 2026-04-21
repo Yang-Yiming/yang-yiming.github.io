@@ -183,7 +183,10 @@ export function Hero() {
                 className="hero__index-link"
                 href={`#${section.id}`}
               >
-                <span>{section.navLabel}</span>
+                <span>
+                  {section.navLabel}
+                  <span className="hero__index-arrow" aria-hidden="true"> →</span>
+                </span>
                 <span>{section.kicker}</span>
               </a>
             ))}

@@ -29,20 +29,18 @@
     min-height: 100%;
     padding: 1rem 1.05rem 1.05rem;
     border: 1px solid var(--line);
-    background: rgba(251, 252, 253, 0.82);
+    background: #fff;
     border-radius: 0.75rem;
     transition:
         background-color var(--transition),
         border-color var(--transition),
-        color var(--transition),
-        transform var(--transition);
+        color var(--transition);
 }
 
 .project-card:hover,
 .project-card:focus-visible {
-    background: rgba(251, 252, 253, 0.98);
+    background: #fafafa;
     border-color: var(--line-strong);
-    transform: translateY(-1px);
 }
 
 .project-card__header,

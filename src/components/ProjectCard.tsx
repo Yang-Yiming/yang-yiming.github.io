@@ -2,6 +2,22 @@ import { getRepoLabel } from "../lib/github";
 import { renderMarkdown } from "../lib/markdown";
 import type { GitHubProject } from "../types";
 
+const languageColors: Record<string, string> = {
+  Swift: "#ffac45",
+  Rust: "#dea584",
+  JavaScript: "#f1e05a",
+  Javascript: "#f1e05a",
+  Python: "#3572A5",
+  TypeScript: "#3178c6",
+  Go: "#00ADD8",
+  Java: "#b07219",
+  "C++": "#f34b7d",
+  "C#": "#178600",
+  Ruby: "#701516",
+  PHP: "#4F5D95",
+  Shell: "#89e051",
+};
+
 interface ProjectCardProps {
   project: GitHubProject;
 }
@@ -44,7 +60,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <div className="project-card__meta">
           {project.language ? (
             <span className="project-card__meta-item">
-              <span className="project-card__language-dot" aria-hidden="true" />
+              <span
+                className="project-card__language-dot"
+                aria-hidden="true"
+                style={{ background: languageColors[project.language] || "var(--accent)" }}
+              />
               {project.language}
             </span>
           ) : null}

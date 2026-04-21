@@ -77,11 +77,13 @@
 .site-nav__link::after {
     content: "";
     position: absolute;
-    left: 0.85rem;
-    right: 0.85rem;
-    bottom: 0.45rem;
-    height: 1px;
+    left: 50%;
+    bottom: 0.35rem;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 2px;
     background: transparent;
+    border-radius: 1px;
     transition: background-color var(--transition);
 }
 
@@ -94,7 +96,7 @@
 .site-nav__link:hover::after,
 .site-nav__link:focus-visible::after,
 .site-nav__link.is-active::after {
-    background: var(--accent);
+    background: var(--text);
 }
 
 .site-header--home.site-header--expanded .site-header__inner {

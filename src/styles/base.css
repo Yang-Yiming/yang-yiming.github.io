@@ -4,6 +4,7 @@
     color-scheme: light;
     --bg: #f7f8fa;
     --bg-strong: #f1f3f6;
+    --bg-alt: #f1f3f6;
     --text: #171b22;
     --text-soft: #5d6675;
     --text-muted: #7b8492;
@@ -82,7 +83,7 @@ select {
     margin: 0;
     color: var(--text-muted);
     font-size: 0.76rem;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
 }
 
