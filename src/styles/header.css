@@ -49,7 +49,7 @@
 .site-nav {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 1.2rem;
     overflow-x: auto;
     scrollbar-width: none;
     transition: gap 220ms ease;
@@ -61,42 +61,23 @@
 
 .site-nav__link {
     position: relative;
-    padding: 0.72rem 0.92rem;
+    padding: 0.72rem 0.4rem;
     color: var(--text-soft);
-    font-size: 0.84rem;
-    letter-spacing: 0.055em;
-    text-transform: uppercase;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.92rem;
+    font-weight: 400;
+    letter-spacing: 0;
     transition:
         color var(--transition),
-        background-color var(--transition),
-        padding 220ms ease,
-        font-size 220ms ease,
-        letter-spacing 220ms ease;
-}
-
-.site-nav__link::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: 0.35rem;
-    transform: translateX(-50%);
-    width: 16px;
-    height: 2px;
-    background: transparent;
-    border-radius: 1px;
-    transition: background-color var(--transition);
+        font-weight var(--transition),
+        padding 220ms ease;
 }
 
 .site-nav__link:hover,
 .site-nav__link:focus-visible,
 .site-nav__link.is-active {
     color: var(--text);
-}
-
-.site-nav__link:hover::after,
-.site-nav__link:focus-visible::after,
-.site-nav__link.is-active::after {
-    background: var(--text);
+    font-weight: 500;
 }
 
 .site-header--home.site-header--expanded .site-header__inner {
@@ -117,13 +98,11 @@
 }
 
 .site-header--home.site-header--expanded .site-nav {
-    gap: 0.55rem;
+    gap: 1.2rem;
 }
 
 .site-header--home.site-header--expanded .site-nav__link {
-    padding: 0.95rem 1.06rem;
-    font-size: 0.9rem;
-    letter-spacing: 0.065em;
+    padding: 0.95rem 0.4rem;
 }
 
 @media (max-width: 900px) {
