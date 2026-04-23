@@ -40,35 +40,31 @@
 .entry-page__backlink {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
-    padding: 0.6rem 0.85rem;
-    border: 1px solid var(--line-strong);
-    background: linear-gradient(90deg, var(--accent-soft), transparent 72%);
+    gap: 0.5rem;
     width: fit-content;
-    color: var(--text);
-    font-size: 0.82rem;
+    color: var(--text-soft);
+    font-size: 0.95rem;
+    font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    padding-bottom: 0.15rem;
+    border-bottom: 1px solid var(--line);
     transition:
+        color var(--transition),
         border-color var(--transition),
-        background-color var(--transition),
-        color var(--transition);
+        transform var(--transition);
 }
 
 .entry-page__backlink-arrow {
-    font-size: 1rem;
+    font-size: 0.95rem;
     line-height: 1;
 }
 
 .entry-page__backlink:hover,
 .entry-page__backlink:focus-visible {
     color: var(--accent);
-    border-color: var(--accent);
-    background: linear-gradient(
-        90deg,
-        rgba(63, 98, 136, 0.16),
-        transparent 72%
-    );
+    border-bottom-color: var(--accent);
+    transform: translateX(-0.2rem);
 }
 
 .entry-page__title {
