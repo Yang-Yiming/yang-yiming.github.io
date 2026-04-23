@@ -41,12 +41,11 @@
 
 .list-row {
     display: grid;
-    grid-template-columns: minmax(110px, 150px) minmax(0, 1fr);
-    gap: 1rem;
-    padding: 1.15rem 0;
+    grid-template-columns: 1fr;
+    padding: 1.6rem 0;
     border-top: 1px solid var(--line);
     transition:
-        background-color var(--transition),
+        transform var(--transition),
         border-color var(--transition);
 }
 
@@ -54,9 +53,13 @@
     position: relative;
 }
 
-.list-row:hover {
-    background: linear-gradient(90deg, var(--accent-soft), transparent 40%);
+.list-row--link:hover {
+    transform: translateX(3px);
     border-color: var(--line-strong);
+}
+
+.list-row__meta {
+    margin-bottom: 0.35rem;
 }
 
 .list-row--link:hover .list-row__title,
