@@ -9,7 +9,7 @@ export const siteMeta = {
     "Building tools with AI whenever I have a need",
 
   location: "",
-  accentLabel: "Empty accentLabel",
+  accentLabel: "When I'm thirsty, I drink.",
   links: [
     {
       label: "GitHub",

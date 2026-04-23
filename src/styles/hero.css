@@ -104,17 +104,7 @@
 .hero-emoji {
     place-items: center;
     padding-top: clamp(1rem, 4vw, 3rem);
-    background:
-        radial-gradient(
-            circle at 52% 44%,
-            rgba(63, 98, 136, 0.14),
-            transparent 34%
-        ),
-        radial-gradient(
-            circle at 50% 50%,
-            rgba(255, 255, 255, 0.92),
-            transparent 58%
-        );
+    background: transparent;
 }
 
 .hero-emoji__symbol {

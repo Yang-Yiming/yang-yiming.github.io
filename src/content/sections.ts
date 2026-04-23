@@ -69,21 +69,7 @@ export const sections: SectionContent[] = [
     navLabel: "Fun!",
     kicker: "Index / 06",
     title: "Just some fun things.",
-    intro:
-      "A closing section for experiments that are faster, lighter, stranger, or simply enjoyable enough to keep around.",
-    items: [
-      {
-        title: "Mini Playground",
-        meta: "Prototype",
-        description:
-          "Reserved for small interactive pieces, sketches, or delightful technical detours.",
-      },
-      {
-        title: "Collectibles",
-        meta: "Miscellany",
-        description:
-          "Bookmarks, references, and artifacts that deserve a more casual home.",
-      },
-    ],
+    intro: "Developing...",
+    items: [],
   },
 ];

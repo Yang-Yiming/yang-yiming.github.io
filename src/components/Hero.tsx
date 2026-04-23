@@ -154,12 +154,14 @@ export function Hero() {
           </button>
         ) : (
           <div aria-hidden="true" className="hero-emoji">
-            <span className="hero-emoji__symbol">🥑</span>
+            <span className="hero-emoji__symbol"></span>
           </div>
         )}
       </div>
 
-      <div className={`hero__columns${hasNotes ? "" : " hero__columns--compact"}`}>
+      <div
+        className={`hero__columns${hasNotes ? "" : " hero__columns--compact"}`}
+      >
         <div className="hero__column">
           <p className="section-kicker">Overview</p>
           <div
@@ -185,7 +187,10 @@ export function Hero() {
               >
                 <span>
                   {section.navLabel}
-                  <span className="hero__index-arrow" aria-hidden="true"> →</span>
+                  <span className="hero__index-arrow" aria-hidden="true">
+                    {" "}
+                    →
+                  </span>
                 </span>
                 <span>{section.kicker}</span>
               </a>
