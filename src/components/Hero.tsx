@@ -51,12 +51,7 @@ export function Hero() {
   const hasLocation = Boolean(siteMeta.location.trim());
   const hasNotes = Boolean(home.items?.length);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [failedSources, setFailedSources] = useState<string[]>([]);
-
-  const availableImages = useMemo(
-    () => heroImages.filter((image) => !failedSources.includes(image.src)),
-    [failedSources, heroImages],
-  );
+  const availableImages = useMemo(() => heroImages, [heroImages]);
 
   useEffect(() => {
     if (availableImages.length < 2) {
@@ -164,24 +159,6 @@ export function Hero() {
     };
   }, []);
 
-  function showNextImage() {
-    if (availableImages.length < 2) {
-      return;
-    }
-
-    setCurrentImageIndex(
-      (currentIndex) => (currentIndex + 1) % availableImages.length,
-    );
-  }
-
-  function handleImageError(src: string) {
-    setFailedSources((sources) =>
-      sources.includes(src) ? sources : [...sources, src],
-    );
-  }
-
-  const currentImage = availableImages[currentImageIndex];
-
   return (
     <section
       className={`hero section-frame${hasNotes ? "" : " hero--compact"}`}
@@ -243,7 +220,7 @@ export function Hero() {
                 </div>
               </div>
               <div className="face-png-container">
-                <img src="/assets/ghost/face.png" alt="face" />
+                <img src="/assets/ghost/face.png" alt="face" loading="lazy" />
               </div>
               <div className="ghost-feet">
                 <div></div>
