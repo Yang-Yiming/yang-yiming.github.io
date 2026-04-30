@@ -66,23 +66,28 @@ export function Ghost({ ghostFaceSwapEnabled }: GhostProps) {
           }
         }
 
-        const fStyle = window.getComputedStyle(face).transform;
-        const eStyle = window.getComputedStyle(eyeContainer).transform;
-        face.style.setProperty("--face-start-pos", fStyle);
-        eyeContainer.style.setProperty("--eye-start-pos", eStyle);
+        if (ghostFaceSwapEnabled) {
+          const fStyle = window.getComputedStyle(face).transform;
+          const eStyle = window.getComputedStyle(eyeContainer).transform;
+          face.style.setProperty("--face-start-pos", fStyle);
+          eyeContainer.style.setProperty("--eye-start-pos", eStyle);
+
+          face.classList.add("face-happy-active");
+          eyeContainer.classList.add("eye-happy-active");
+          if (showPhoto) {
+            photoFace.classList.add("photo-happy-active");
+          }
+        }
 
         eyes.forEach((eye) => eye.classList.add("happy"));
-        face.classList.add("face-happy-active");
-        eyeContainer.classList.add("eye-happy-active");
-        if (showPhoto) {
-          photoFace.classList.add("photo-happy-active");
-        }
 
         window.setTimeout(() => {
           eyes.forEach((eye) => eye.classList.remove("happy"));
-          face.classList.remove("face-happy-active");
-          eyeContainer.classList.remove("eye-happy-active");
-          photoFace.classList.remove("photo-happy-active");
+          if (ghostFaceSwapEnabled) {
+            face.classList.remove("face-happy-active");
+            eyeContainer.classList.remove("eye-happy-active");
+            photoFace.classList.remove("photo-happy-active");
+          }
           isBusy = false;
         }, 6000);
 
