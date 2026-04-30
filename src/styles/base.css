@@ -98,8 +98,13 @@
     --image-overlay: rgba(8, 10, 14, 0.35);
 }
 
-* {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease;
 }
 
 html {

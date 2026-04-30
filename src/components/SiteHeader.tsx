@@ -27,7 +27,15 @@ export function SiteHeader({ activeSection, isHome = false }: SiteHeaderProps) {
     const storedMode = window.localStorage.getItem("theme-mode") as ThemeMode | null;
     return storedMode ?? "auto";
   });
-  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const toggleTheme = () => {
+    setThemeMode((prev) => {
+      if (prev === "auto") {
+        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        return systemDark ? "light" : "dark";
+      }
+      return prev === "light" ? "dark" : "light";
+    });
+  };
 
   useEffect(() => {
     if (!isHome) {
@@ -119,32 +127,11 @@ export function SiteHeader({ activeSection, isHome = false }: SiteHeaderProps) {
             <button
               type="button"
               className="theme-toggle__button"
-              onClick={() => setIsThemeMenuOpen((value) => !value)}
-              aria-haspopup="listbox"
-              aria-expanded={isThemeMenuOpen}
-              aria-label={`Theme: ${themeMode}`}
+              onClick={toggleTheme}
+              aria-label={`Switch theme${themeMode !== "auto" ? ` (currently ${themeMode})` : ""}`}
             >
               <span className="theme-toggle__icon" aria-hidden="true" />
             </button>
-            {isThemeMenuOpen ? (
-              <div className="theme-toggle__menu" role="listbox" aria-label="Theme">
-                {(["auto", "light", "dark"] as ThemeMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    className={`theme-toggle__option${themeMode === mode ? " is-active" : ""}`}
-                    role="option"
-                    aria-selected={themeMode === mode}
-                    onClick={() => {
-                      setThemeMode(mode);
-                      setIsThemeMenuOpen(false);
-                    }}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            ) : null}
           </div>
         </div>
       </div>

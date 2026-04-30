@@ -113,44 +113,6 @@
     background: linear-gradient(90deg, #0f1217 0 50%, #f7f8fa 50% 100%);
 }
 
-.theme-toggle__option {
-    border: 0;
-    padding: 0.35rem 0.75rem;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition:
-        color var(--transition),
-        background-color var(--transition),
-        border-color var(--transition);
-}
-
-.theme-toggle__option:hover,
-.theme-toggle__option:focus-visible {
-    color: var(--text);
-}
-
-.theme-toggle__option.is-active {
-    background: var(--accent-soft);
-    color: var(--accent);
-}
-
-.theme-toggle__menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 0.6rem);
-    display: grid;
-    gap: 0.25rem;
-    min-width: 7rem;
-    padding: 0.4rem;
-    border: 1px solid var(--line);
-    border-radius: 0.9rem;
-    background: var(--card-bg);
-}
 
 .site-nav__link:hover,
 .site-nav__link:focus-visible,
