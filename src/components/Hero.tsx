@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, useEffect, useMemo, useState, Suspense } from "react";
 import { sections, siteMeta } from "../content";
 import { renderMarkdown } from "../lib/markdown";
 import type { SiteLink } from "../types";
-import { Ghost } from "./Ghost";
+
+const Ghost = lazy(() =>
+  import("./Ghost").then((m) => ({ default: m.Ghost })),
+);
 
 const heroRotationDelay = 4800;
 
@@ -110,7 +113,9 @@ export function Hero({ ghostFaceSwapEnabled }: HeroProps) {
           />
         </div>
 
-        <Ghost ghostFaceSwapEnabled={ghostFaceSwapEnabled} />
+        <Suspense fallback={null}>
+          <Ghost ghostFaceSwapEnabled={ghostFaceSwapEnabled} />
+        </Suspense>
       </div>
 
       <div

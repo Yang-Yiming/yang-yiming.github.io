@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "../styles/ghost.css";
 
 const ghostPhotoModules = import.meta.glob(
   "/public/assets/ghost/*.{png,jpg,jpeg,webp,avif,gif}",
