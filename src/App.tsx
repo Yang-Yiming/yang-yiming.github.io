@@ -205,17 +205,30 @@ function getScrollTarget(
   };
 }
 
-function HomeContent() {
+interface HomeContentProps {
+  ghostFaceSwapEnabled: boolean;
+  onGhostFaceSwapChange: (enabled: boolean) => void;
+}
+
+function HomeContent({
+  ghostFaceSwapEnabled,
+  onGhostFaceSwapChange,
+}: HomeContentProps) {
   return (
     <main className="page-main">
-      <Hero />
+      <Hero ghostFaceSwapEnabled={ghostFaceSwapEnabled} />
       {sections
         .filter((section) => section.id !== "home")
         .map((section) => (
           section.id === "projects" ? (
             <ProjectsSection key={section.id} section={section} />
           ) : (
-            <EditorialSection key={section.id} section={section} />
+            <EditorialSection
+              key={section.id}
+              section={section}
+              ghostFaceSwapEnabled={ghostFaceSwapEnabled}
+              onGhostFaceSwapChange={onGhostFaceSwapChange}
+            />
           )
         ))}
     </main>
@@ -245,6 +258,7 @@ function App() {
   const [backgroundHomeRoute, setBackgroundHomeRoute] = useState<HomeRoute | null>(
     route.kind === "home" ? route : null,
   );
+  const [ghostFaceSwapEnabled, setGhostFaceSwapEnabled] = useState(false);
   const currentLocationKeyRef = useRef(getLocationKey(window.location));
   const scrollPositionsRef = useRef<Record<string, number>>({});
   const pendingScrollRef = useRef<ScrollTarget>(null);
@@ -512,7 +526,10 @@ function App() {
       return (
         <div className="page-shell">
           <SiteHeader activeSection={entry.collectionId} />
-          <HomeContent />
+          <HomeContent
+            ghostFaceSwapEnabled={ghostFaceSwapEnabled}
+            onGhostFaceSwapChange={setGhostFaceSwapEnabled}
+          />
           <div className="entry-overlay" role="dialog" aria-modal="true">
             <div className="entry-overlay__panel">
               <Suspense fallback={<EntryPageLoader />}>
@@ -546,7 +563,10 @@ function App() {
   return (
     <div className="page-shell">
       <SiteHeader activeSection={activeSection} isHome />
-      <HomeContent />
+      <HomeContent
+        ghostFaceSwapEnabled={ghostFaceSwapEnabled}
+        onGhostFaceSwapChange={setGhostFaceSwapEnabled}
+      />
     </div>
   );
 }

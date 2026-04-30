@@ -1,9 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { sections, siteMeta } from "../content";
 import { renderMarkdown } from "../lib/markdown";
 import type { SiteLink } from "../types";
 
 const heroRotationDelay = 4800;
+const ghostPhotoModules = import.meta.glob(
+  "/public/assets/ghost/*.{png,jpg,jpeg,webp,avif,gif}",
+  {
+    eager: true,
+    import: "default",
+    query: "?url",
+  },
+);
+const ghostPhotoSources = Object.values(ghostPhotoModules) as string[];
+
+interface HeroProps {
+  ghostFaceSwapEnabled: boolean;
+}
 
 function LinkIcon({ icon }: { icon?: SiteLink["icon"] }) {
   if (icon === "github") {
@@ -45,12 +58,16 @@ function LinkIcon({ icon }: { icon?: SiteLink["icon"] }) {
   return null;
 }
 
-export function Hero() {
+export function Hero({ ghostFaceSwapEnabled }: HeroProps) {
   const home = sections[0];
   const heroImages = siteMeta.heroImages;
   const hasLocation = Boolean(siteMeta.location.trim());
   const hasNotes = Boolean(home.items?.length);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentGhostPhoto, setCurrentGhostPhoto] = useState(
+    ghostPhotoSources[0] ?? "",
+  );
+  const ghostPhotoRef = useRef<HTMLImageElement>(null);
   const availableImages = useMemo(() => heroImages, [heroImages]);
 
   useEffect(() => {
@@ -79,8 +96,8 @@ export function Hero() {
     const face = document.querySelector<HTMLElement>(
       ".hero-ghost .ghost-face",
     );
-    const pngFace = document.querySelector<HTMLElement>(
-      ".hero-ghost .face-png-container",
+    const photoFace = document.querySelector<HTMLElement>(
+      ".hero-ghost .ghost-photo-face",
     );
     const eyeContainer = document.querySelector<HTMLElement>(
       ".hero-ghost .ghost-eyes",
@@ -89,19 +106,38 @@ export function Hero() {
       ".hero-ghost .eye",
     );
 
-    if (!face || !pngFace || !eyeContainer || eyes.length === 0) {
+    if (!face || !photoFace || !eyeContainer || eyes.length === 0) {
       return;
     }
 
     let isBusy = false;
 
-    const handleClick = () => {
+    const handleClick = (event: MouseEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest(".fun-toggle")
+      ) {
+        return;
+      }
+
       if (isBusy) return;
       isBusy = true;
 
-      const isHappy = Math.random() > 0.5;
+      const canShowPhoto = ghostFaceSwapEnabled && ghostPhotoSources.length > 0;
+      const showPhoto = canShowPhoto && Math.random() > 0.5;
+      const isHappy = showPhoto || Math.random() > 0.5;
 
       if (isHappy) {
+        if (showPhoto) {
+          const nextPhoto =
+            ghostPhotoSources[Math.floor(Math.random() * ghostPhotoSources.length)];
+
+          setCurrentGhostPhoto(nextPhoto);
+          if (ghostPhotoRef.current) {
+            ghostPhotoRef.current.src = nextPhoto;
+          }
+        }
+
         const fStyle = window.getComputedStyle(face).transform;
         const eStyle = window.getComputedStyle(eyeContainer).transform;
         face.style.setProperty("--face-start-pos", fStyle);
@@ -110,13 +146,15 @@ export function Hero() {
         eyes.forEach((eye) => eye.classList.add("happy"));
         face.classList.add("face-happy-active");
         eyeContainer.classList.add("eye-happy-active");
-        pngFace.classList.add("png-happy-active");
+        if (showPhoto) {
+          photoFace.classList.add("photo-happy-active");
+        }
 
         window.setTimeout(() => {
           eyes.forEach((eye) => eye.classList.remove("happy"));
           face.classList.remove("face-happy-active");
           eyeContainer.classList.remove("eye-happy-active");
-          pngFace.classList.remove("png-happy-active");
+          photoFace.classList.remove("photo-happy-active");
           isBusy = false;
         }, 6000);
 
@@ -157,7 +195,7 @@ export function Hero() {
     return () => {
       document.body.removeEventListener("click", handleClick);
     };
-  }, []);
+  }, [ghostFaceSwapEnabled]);
 
   return (
     <section
@@ -219,8 +257,17 @@ export function Hero() {
                   <div className="eye eye-r"></div>
                 </div>
               </div>
-              <div className="face-png-container">
-                <img src="/assets/ghost/face.png" alt="face" loading="lazy" />
+              <div className="ghost-photo-face">
+                {currentGhostPhoto ? (
+                  <img
+                    ref={ghostPhotoRef}
+                    className="ghost-photo-face__image"
+                    src={currentGhostPhoto}
+                    alt=""
+                    aria-hidden="true"
+                    decoding="async"
+                  />
+                ) : null}
               </div>
               <div className="ghost-feet">
                 <div></div>
