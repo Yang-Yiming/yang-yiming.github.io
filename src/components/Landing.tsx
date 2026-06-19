@@ -9,12 +9,15 @@ interface LandingProps {
 
 export function Landing({ onEnter, pathRef }: LandingProps) {
   return (
-    <section className="landing" aria-label="Intro">
-      <div className="landing__content">
-        <p className="landing__greeting">Hello</p>
-        <p className="landing__name">{siteMeta.name}</p>
-        <p className="landing__role">{siteMeta.role}</p>
-      </div>
+    <>
+      <section className="landing" aria-label="Intro">
+        <div className="landing__content">
+          <p className="landing__greeting">Hello</p>
+          <p className="landing__name">{siteMeta.name}</p>
+          <p className="landing__role">{siteMeta.role}</p>
+        </div>
+        <Wave pathRef={pathRef} />
+      </section>
       <button
         className="landing__hint"
         type="button"
@@ -24,7 +27,6 @@ export function Landing({ onEnter, pathRef }: LandingProps) {
         <span>Scroll</span>
         <span className="landing__hint-arrow">↓</span>
       </button>
-      <Wave pathRef={pathRef} />
-    </section>
+    </>
   );
 }

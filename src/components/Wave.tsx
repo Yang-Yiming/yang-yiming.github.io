@@ -10,14 +10,16 @@ const PATH_FLAT =
 const PATH_WAVE =
   "M -44,-50 C -137.1,117.4 67.86,445.5 236,452 435.3,459.7 500.5,242.6 676,244 873.5,245.6 957,522.4 1154,594 1593,753.7 1793,226.3 1582,-126 1371,-478.3 219.8,-524.2 -44,-50 Z";
 
+const NUM_RE = /-?\d+(?:\.\d+)?/g;
+const FLAT_VALUES = PATH_FLAT.match(NUM_RE)!.map(Number);
+const WAVE_VALUES = PATH_WAVE.match(NUM_RE)!.map(Number);
+
 export function interpolateWavePath(t: number): string {
-  const re = /-?\d+(?:\.\d+)?/g;
-  const a = PATH_FLAT.match(re)!.map(Number);
-  const b = PATH_WAVE.match(re)!.map(Number);
+  const clamped = Math.min(Math.max(t, 0), 1);
 
   let i = 0;
-  return PATH_FLAT.replace(re, () => {
-    const val = a[i] + (b[i] - a[i]) * Math.min(Math.max(t, 0), 1);
+  return PATH_FLAT.replace(NUM_RE, () => {
+    const val = FLAT_VALUES[i] + (WAVE_VALUES[i] - FLAT_VALUES[i]) * clamped;
     i++;
     return String(Math.round(val * 100) / 100);
   });
@@ -37,11 +39,16 @@ export function Wave({ pathRef }: WaveProps) {
       viewBox="0 0 1440 800"
       aria-hidden="true"
     >
+      <style>
+        {".wave-stop-top{stop-color:var(--bg)}.wave-stop-bottom{stop-color:var(--bg-strong)}"}
+      </style>
       <defs>
-        <clipPath id="wave-clip">
-          <path ref={pathRef} d={PATH_FLAT} />
-        </clipPath>
+        <linearGradient id="wave-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" className="wave-stop-top" />
+          <stop offset="100%" className="wave-stop-bottom" />
+        </linearGradient>
       </defs>
+      <path ref={pathRef} d={PATH_FLAT} fill="url(#wave-grad)" />
     </svg>
   );
 }

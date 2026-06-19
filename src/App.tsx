@@ -258,38 +258,14 @@ function App() {
   const pendingScrollRef = useRef<ScrollTarget>(null);
   const isEntryOverlay = route.kind === "entry" && backgroundHomeRoute !== null;
 
-  const snapLockRef = useRef(false);
-  const animationFrameRef = useRef(0);
+  const landingFrameRef = useRef(0);
   const wavePathRef = useRef<SVGPathElement | null>(null);
 
-  const performSnap = (target: 0 | 1) => {
-    if (snapLockRef.current) return;
-    snapLockRef.current = true;
-    cancelAnimationFrame(animationFrameRef.current);
-
-    const vh = window.innerHeight;
-    const duration = 1000;
-    const start = performance.now();
-    const fromScroll = window.scrollY;
-    const toScroll = target * vh;
-
-    const animate = (now: number) => {
-      const elapsed = now - start;
-      const t = Math.min(elapsed / duration, 1);
-      const eased = -(Math.cos(Math.PI * t) - 1) / 2;
-      const sy = fromScroll + (toScroll - fromScroll) * eased;
-
-      document.documentElement.scrollTop = sy;
-
-      if (t < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
-      snapLockRef.current = false;
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
+  const enterFromLanding = () => {
+    window.scrollTo({
+      top: window.innerHeight,
+      behavior: "smooth",
+    });
   };
 
   useEffect(() => {
@@ -327,83 +303,36 @@ function App() {
         "--landing-progress",
         String(progress),
       );
+      document.documentElement.dataset.landingEntered =
+        progress > 0.25 ? "true" : "false";
 
       if (wavePathRef.current) {
         wavePathRef.current.setAttribute("d", interpolateWavePath(progress));
       }
     };
 
+    const requestLandingProgressUpdate = () => {
+      if (landingFrameRef.current) return;
+
+      landingFrameRef.current = window.requestAnimationFrame(() => {
+        landingFrameRef.current = 0;
+        updateLandingProgress();
+      });
+    };
+
     updateLandingProgress();
-    window.addEventListener("scroll", updateLandingProgress, { passive: true });
-    window.addEventListener("resize", updateLandingProgress);
+    window.addEventListener("scroll", requestLandingProgressUpdate, {
+      passive: true,
+    });
+    window.addEventListener("resize", requestLandingProgressUpdate);
 
     return () => {
-      window.removeEventListener("scroll", updateLandingProgress);
-      window.removeEventListener("resize", updateLandingProgress);
+      window.removeEventListener("scroll", requestLandingProgressUpdate);
+      window.removeEventListener("resize", requestLandingProgressUpdate);
+      cancelAnimationFrame(landingFrameRef.current);
+      landingFrameRef.current = 0;
       document.documentElement.style.removeProperty("--landing-progress");
-    };
-  }, [route.kind]);
-
-  useEffect(() => {
-    if (route.kind !== "home") return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (snapLockRef.current) {
-        e.preventDefault();
-        return;
-      }
-
-      const sy = window.scrollY;
-      const vh = window.innerHeight;
-
-      if (sy < 20 && e.deltaY > 0) {
-        e.preventDefault();
-        performSnap(1);
-        return;
-      }
-
-      if (sy <= vh + 40 && sy > 20 && e.deltaY < 0) {
-        e.preventDefault();
-        performSnap(0);
-        return;
-      }
-    };
-
-    let touchStartY = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        touchStartY = e.touches[0].clientY;
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (snapLockRef.current || e.touches.length !== 1) return;
-
-      const deltaY = touchStartY - e.touches[0].clientY;
-      const sy = window.scrollY;
-      const vh = window.innerHeight;
-
-      if (sy < 20 && deltaY > 10) {
-        performSnap(1);
-        return;
-      }
-
-      if (sy <= vh + 40 && sy > 20 && deltaY < -10) {
-        performSnap(0);
-        return;
-      }
-    };
-
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", handleTouchMove, { passive: true });
-
-    return () => {
-      window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-      cancelAnimationFrame(animationFrameRef.current);
+      delete document.documentElement.dataset.landingEntered;
     };
   }, [route.kind]);
 
@@ -688,7 +617,7 @@ function App() {
   return (
     <div className="page-shell page-shell--has-landing">
       <SiteHeader activeSection={activeSection} isHome />
-      <Landing onEnter={() => performSnap(1)} pathRef={wavePathRef} />
+      <Landing onEnter={enterFromLanding} pathRef={wavePathRef} />
       <HomeContent />
     </div>
   );
