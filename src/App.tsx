@@ -10,6 +10,12 @@ import { getEntry, sections } from "./content";
 import type { EntryCollectionId, SectionId } from "./types";
 
 const anchorOffset = 18;
+const landingSettleDelay = 80;
+const landingSettleDuration = 780;
+const landingSettleRange = {
+  max: 0.98,
+  min: 0.005,
+};
 const EntryPage = lazy(() =>
   import("./components/EntryPage").then((module) => ({
     default: module.EntryPage,
@@ -161,6 +167,10 @@ function getHashSectionId(hash: string, sectionIds: SectionId[]) {
   return sectionIds.includes(sectionId) ? sectionId : null;
 }
 
+function shouldReduceMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function getScrollTarget(
   nextRoute: AppRoute,
   url: URL | Location,
@@ -259,13 +269,60 @@ function App() {
   const isEntryOverlay = route.kind === "entry" && backgroundHomeRoute !== null;
 
   const landingFrameRef = useRef(0);
+  const landingSettleFrameRef = useRef(0);
+  const landingSettleTimerRef = useRef(0);
+  const landingIsSettlingRef = useRef(false);
+  const landingLastScrollYRef = useRef(0);
+  const landingLastDirectionRef = useRef<1 | -1>(1);
   const wavePathRef = useRef<SVGPathElement | null>(null);
 
+  const cancelLandingSettleAnimation = () => {
+    cancelAnimationFrame(landingSettleFrameRef.current);
+    landingSettleFrameRef.current = 0;
+    landingIsSettlingRef.current = false;
+  };
+
+  const animateLandingTo = (target: number) => {
+    cancelLandingSettleAnimation();
+
+    if (shouldReduceMotion()) {
+      window.scrollTo({
+        top: target,
+        behavior: "auto",
+      });
+      return;
+    }
+
+    const start = window.scrollY;
+    const distance = target - start;
+    const startTime = performance.now();
+
+    landingIsSettlingRef.current = true;
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / landingSettleDuration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+
+      window.scrollTo({
+        top: start + distance * eased,
+        behavior: "auto",
+      });
+
+      if (progress < 1) {
+        landingSettleFrameRef.current = window.requestAnimationFrame(animate);
+        return;
+      }
+
+      landingIsSettlingRef.current = false;
+      landingSettleFrameRef.current = 0;
+    };
+
+    landingSettleFrameRef.current = window.requestAnimationFrame(animate);
+  };
+
   const enterFromLanding = () => {
-    window.scrollTo({
-      top: window.innerHeight,
-      behavior: "smooth",
-    });
+    animateLandingTo(window.innerHeight);
   };
 
   useEffect(() => {
@@ -293,11 +350,26 @@ function App() {
       return;
     }
 
+    const clearLandingSettle = () => {
+      window.clearTimeout(landingSettleTimerRef.current);
+      landingSettleTimerRef.current = 0;
+    };
+
     const updateLandingProgress = () => {
+      const previousScrollY = landingLastScrollYRef.current;
+      const scrollY = window.scrollY;
+      const viewportHeight = window.innerHeight;
       const progress = Math.min(
         1,
-        Math.max(0, window.scrollY / window.innerHeight),
+        Math.max(0, scrollY / viewportHeight),
       );
+      const scrollDelta = scrollY - previousScrollY;
+
+      if (Math.abs(scrollDelta) > 1) {
+        landingLastDirectionRef.current = scrollDelta > 0 ? 1 : -1;
+      }
+
+      landingLastScrollYRef.current = scrollY;
 
       document.documentElement.style.setProperty(
         "--landing-progress",
@@ -311,6 +383,28 @@ function App() {
       }
     };
 
+    const settleLandingScroll = () => {
+      landingSettleTimerRef.current = 0;
+
+      const viewportHeight = window.innerHeight;
+      const progress = Math.min(
+        1,
+        Math.max(0, window.scrollY / viewportHeight),
+      );
+
+      if (
+        progress <= landingSettleRange.min ||
+        progress >= landingSettleRange.max
+      ) {
+        return;
+      }
+
+      const target =
+        landingLastDirectionRef.current > 0 ? 1 : 0;
+
+      animateLandingTo(target * viewportHeight);
+    };
+
     const requestLandingProgressUpdate = () => {
       if (landingFrameRef.current) return;
 
@@ -320,16 +414,80 @@ function App() {
       });
     };
 
+    const requestLandingSettle = () => {
+      clearLandingSettle();
+
+      if (landingIsSettlingRef.current) {
+        return;
+      }
+
+      const progress = Math.min(
+        1,
+        Math.max(0, window.scrollY / window.innerHeight),
+      );
+
+      if (
+        progress <= landingSettleRange.min ||
+        progress >= landingSettleRange.max
+      ) {
+        return;
+      }
+
+      landingSettleTimerRef.current = window.setTimeout(
+        settleLandingScroll,
+        landingSettleDelay,
+      );
+    };
+
+    const handleLandingScroll = () => {
+      requestLandingProgressUpdate();
+      requestLandingSettle();
+    };
+
+    const handleLandingUserInput = () => {
+      cancelLandingSettleAnimation();
+      clearLandingSettle();
+    };
+
+    const handleLandingKeyDown = (event: KeyboardEvent) => {
+      if (
+        ![
+          "ArrowDown",
+          "ArrowUp",
+          "End",
+          "Home",
+          "PageDown",
+          "PageUp",
+          " ",
+        ].includes(event.key)
+      ) {
+        return;
+      }
+
+      handleLandingUserInput();
+    };
+
+    landingLastScrollYRef.current = window.scrollY;
     updateLandingProgress();
-    window.addEventListener("scroll", requestLandingProgressUpdate, {
+    window.addEventListener("scroll", handleLandingScroll, {
       passive: true,
     });
     window.addEventListener("resize", requestLandingProgressUpdate);
+    window.addEventListener("wheel", handleLandingUserInput, { passive: true });
+    window.addEventListener("touchstart", handleLandingUserInput, {
+      passive: true,
+    });
+    window.addEventListener("keydown", handleLandingKeyDown);
 
     return () => {
-      window.removeEventListener("scroll", requestLandingProgressUpdate);
+      window.removeEventListener("scroll", handleLandingScroll);
       window.removeEventListener("resize", requestLandingProgressUpdate);
+      window.removeEventListener("wheel", handleLandingUserInput);
+      window.removeEventListener("touchstart", handleLandingUserInput);
+      window.removeEventListener("keydown", handleLandingKeyDown);
+      clearLandingSettle();
       cancelAnimationFrame(landingFrameRef.current);
+      cancelLandingSettleAnimation();
       landingFrameRef.current = 0;
       document.documentElement.style.removeProperty("--landing-progress");
       delete document.documentElement.dataset.landingEntered;
