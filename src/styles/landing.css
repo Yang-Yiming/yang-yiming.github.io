@@ -1,0 +1,127 @@
+.landing {
+  position: fixed;
+  top: calc(var(--landing-progress, 0) * -200vh);
+  left: 0;
+  width: 100%;
+  height: 100svh;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--text);
+  pointer-events: none;
+}
+
+.landing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: clamp(0, calc(1 - var(--landing-progress, 0) * 1.25), 1);
+  background:
+    radial-gradient(
+      circle at top left,
+      var(--bg-glow),
+      transparent 32%
+    ),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-strong) 100%);
+  background-attachment: fixed;
+  background-size: 100% 100svh;
+}
+
+.landing__content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 1rem;
+  text-align: center;
+}
+
+.landing__greeting {
+  margin: 0;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: clamp(4rem, 13vw, 10rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  opacity: clamp(0, calc(1 - var(--landing-progress, 0) * 4), 1);
+  transform: translateY(calc(var(--landing-progress, 0) * -2.5rem));
+}
+
+.landing__name {
+  margin: 0;
+  font-family: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: clamp(0, calc(1 - var(--landing-progress, 0) * 3.5), 1);
+  transform: translateY(calc(var(--landing-progress, 0) * -2rem));
+}
+
+.landing__role {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  opacity: clamp(0, calc(1 - var(--landing-progress, 0) * 3), 1);
+  transform: translateY(calc(var(--landing-progress, 0) * -1.5rem));
+}
+
+.landing__hint {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: clamp(0, calc(1 - var(--landing-progress, 0) * 4), 1);
+  transition: opacity 0.2s ease;
+}
+
+.landing__hint-arrow {
+  animation: landing-hint-bob 2.2s ease-in-out infinite;
+}
+
+@keyframes landing-hint-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+.page-shell--has-landing .page-main {
+  padding-top: 100svh;
+  opacity: clamp(0.85, var(--landing-progress, 0), 1);
+  transform: translateY(calc((1 - var(--landing-progress, 0)) * 3rem));
+}
+
+.page-shell--has-landing .page-main .section-frame:first-child {
+  border-top: 0;
+}
+
+.page-shell--has-landing .site-header {
+  opacity: clamp(0, calc((var(--landing-progress, 0) - 0.4) * 2.5), 1);
+  transform: translateY(
+    calc(
+      (1 - clamp(0, calc((var(--landing-progress, 0) - 0.4) * 2.5), 1)) * -100%
+    )
+  );
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}

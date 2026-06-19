@@ -1,9 +1,11 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { EditorialSection } from "./components/EditorialSection";
 import { Hero } from "./components/Hero";
+import { Landing } from "./components/Landing";
 import { NotFoundPage } from "./components/NotFoundPage";
 import { ProjectsSection } from "./components/ProjectsSection";
 import { SiteHeader } from "./components/SiteHeader";
+import { interpolateWavePath } from "./components/Wave";
 import { getEntry, sections } from "./content";
 import type { EntryCollectionId, SectionId } from "./types";
 
@@ -256,6 +258,40 @@ function App() {
   const pendingScrollRef = useRef<ScrollTarget>(null);
   const isEntryOverlay = route.kind === "entry" && backgroundHomeRoute !== null;
 
+  const snapLockRef = useRef(false);
+  const animationFrameRef = useRef(0);
+  const wavePathRef = useRef<SVGPathElement | null>(null);
+
+  const performSnap = (target: 0 | 1) => {
+    if (snapLockRef.current) return;
+    snapLockRef.current = true;
+    cancelAnimationFrame(animationFrameRef.current);
+
+    const vh = window.innerHeight;
+    const duration = 1000;
+    const start = performance.now();
+    const fromScroll = window.scrollY;
+    const toScroll = target * vh;
+
+    const animate = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = -(Math.cos(Math.PI * t) - 1) / 2;
+      const sy = fromScroll + (toScroll - fromScroll) * eased;
+
+      document.documentElement.scrollTop = sy;
+
+      if (t < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      snapLockRef.current = false;
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+  };
+
   useEffect(() => {
     if (!("scrollRestoration" in window.history)) {
       return;
@@ -274,6 +310,102 @@ function App() {
       setBackgroundHomeRoute(route);
     }
   }, [route]);
+
+  useEffect(() => {
+    if (route.kind !== "home") {
+      document.documentElement.style.removeProperty("--landing-progress");
+      return;
+    }
+
+    const updateLandingProgress = () => {
+      const progress = Math.min(
+        1,
+        Math.max(0, window.scrollY / window.innerHeight),
+      );
+
+      document.documentElement.style.setProperty(
+        "--landing-progress",
+        String(progress),
+      );
+
+      if (wavePathRef.current) {
+        wavePathRef.current.setAttribute("d", interpolateWavePath(progress));
+      }
+    };
+
+    updateLandingProgress();
+    window.addEventListener("scroll", updateLandingProgress, { passive: true });
+    window.addEventListener("resize", updateLandingProgress);
+
+    return () => {
+      window.removeEventListener("scroll", updateLandingProgress);
+      window.removeEventListener("resize", updateLandingProgress);
+      document.documentElement.style.removeProperty("--landing-progress");
+    };
+  }, [route.kind]);
+
+  useEffect(() => {
+    if (route.kind !== "home") return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (snapLockRef.current) {
+        e.preventDefault();
+        return;
+      }
+
+      const sy = window.scrollY;
+      const vh = window.innerHeight;
+
+      if (sy < 20 && e.deltaY > 0) {
+        e.preventDefault();
+        performSnap(1);
+        return;
+      }
+
+      if (sy <= vh + 40 && sy > 20 && e.deltaY < 0) {
+        e.preventDefault();
+        performSnap(0);
+        return;
+      }
+    };
+
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (snapLockRef.current || e.touches.length !== 1) return;
+
+      const deltaY = touchStartY - e.touches[0].clientY;
+      const sy = window.scrollY;
+      const vh = window.innerHeight;
+
+      if (sy < 20 && deltaY > 10) {
+        performSnap(1);
+        return;
+      }
+
+      if (sy <= vh + 40 && sy > 20 && deltaY < -10) {
+        performSnap(0);
+        return;
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [route.kind]);
 
   useEffect(() => {
     if (!isEntryOverlay) {
@@ -554,8 +686,9 @@ function App() {
   }
 
   return (
-    <div className="page-shell">
+    <div className="page-shell page-shell--has-landing">
       <SiteHeader activeSection={activeSection} isHome />
+      <Landing onEnter={() => performSnap(1)} pathRef={wavePathRef} />
       <HomeContent />
     </div>
   );

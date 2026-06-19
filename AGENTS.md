@@ -1,13 +1,14 @@
 # Repository Guidelines
 
 ## Structure
-- `src/App.tsx`: page structure and section composition
-- `src/content.ts`: editable content and image references
-- `src/styles.css`: visual system, spacing, typography, and layout
+- `src/App.tsx`: page structure, section composition, and landing reveal
+- `src/components/Landing.tsx`: full-screen landing intro
+- `src/content/`: editable content and image references (`index.ts`, `siteMeta.ts`, `sections.ts`, `entries.ts`, `projects.ts`)
+- `src/styles.css` + `src/styles/`: visual system, spacing, typography, layout, and landing effect
 - `src/types.ts`: shared types
 - `public/assets/`: static images
 
-Keep content in `src/content.ts`, not scattered through components. Keep visual changes in `src/styles.css` unless structure must change.
+Keep content in `src/content/`, not scattered through components. Keep visual changes in `src/styles.css` and `src/styles/` unless structure must change.
 
 ## Workflow
 Use `bun` for all local work in this repository. Do not switch package managers.
