@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { renderEntryHtml } from "../lib/html";
 import { renderEntryMarkdown } from "../lib/entryMarkdown";
 import type { EntryRecord } from "../types";
@@ -13,6 +14,21 @@ export function EntryPage({ entry }: EntryPageProps) {
   const shouldEmbed = entry.open === "iframe" && embeddedHref;
   const shouldShowNativeLink =
     (entry.open === "native" || entry.kind === "link") && embeddedHref;
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    if (!shouldEmbed) return;
+    if (iframeRef.current) {
+      iframeRef.current.style.height = "2000px";
+    }
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "iframe-height" && iframeRef.current) {
+        iframeRef.current.style.height = `${e.data.height}px`;
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [shouldEmbed]);
 
   return (
     <main className="page-main">
@@ -31,11 +47,7 @@ export function EntryPage({ entry }: EntryPageProps) {
         </div>
 
         <div
-          className={
-            shouldEmbed
-              ? "entry-page__content entry-page__content--embed"
-              : "entry-page__content"
-          }
+          className="entry-page__content"
         >
           {entry.kind === "markdown" && entry.content ? (
             <div
@@ -57,9 +69,11 @@ export function EntryPage({ entry }: EntryPageProps) {
 
           {shouldEmbed ? (
             <iframe
+              ref={iframeRef}
               className="entry-page__frame"
               src={embeddedHref}
               title={entry.title}
+              scrolling="no"
             />
           ) : null}
 

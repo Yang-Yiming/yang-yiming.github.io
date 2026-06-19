@@ -235,9 +235,11 @@
 .entry-page__frame {
     display: block;
     width: 100%;
-    min-height: calc(100vh - var(--nav-height) - 8rem);
-    border: 1px solid var(--line);
-    background: var(--bg-surface);
+    max-width: 980px;
+    margin: 0 auto;
+    min-height: 80vh;
+    border: 0;
+    background: transparent;
 }
 
 @media (max-width: 640px) {

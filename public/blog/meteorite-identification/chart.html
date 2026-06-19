@@ -1,0 +1,2026 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>STA326 — Meteorite Identification</title>
+        <style>
+            :root {
+                --bg: #f7f8fa;
+                --bg-surface: #fbfcfd;
+                --text: #171b22;
+                --text-soft: #4a5568;
+                --text-muted: #6b7280;
+                --accent: #3f6288;
+                --accent-soft: rgba(63, 98, 136, 0.12);
+                --line: rgba(23, 27, 34, 0.14);
+                --green: #2ecc71;
+                --green-dark: #176f3b;
+                --gray: #a9a9a9;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                font-family:
+                    "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+                color: var(--text);
+                background: var(--bg);
+                line-height: 1.65;
+            }
+            .proj-container {
+                max-width: 980px;
+                margin: 0 auto;
+                padding: 0.5rem 0 2rem;
+            }
+            .proj-header h1 {
+                font-family: "Source Serif 4", Georgia, serif;
+                font-size: clamp(1.6rem, 4vw, 2.2rem);
+                font-weight: 500;
+                letter-spacing: -0.02em;
+                margin: 0 0 0.35rem;
+            }
+            .proj-header .kicker {
+                color: var(--text-muted);
+                font-size: 0.72rem;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                margin: 0 0 0.5rem;
+            }
+            .proj-header .meta {
+                color: var(--text-soft);
+                font-size: 0.9rem;
+                margin: 0 0 1.2rem;
+            }
+            .proj-body {
+                border: 0;
+                padding: 1.4rem 0 0;
+                background: transparent;
+                margin: 0 0 2rem;
+            }
+            .proj-body p {
+                color: var(--text-soft);
+                max-width: 68ch;
+                margin: 0 0 0.85rem;
+            }
+            .proj-body p:last-child {
+                margin-bottom: 0;
+            }
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 0.85rem;
+                margin: 1.2rem 0;
+                padding: 0;
+                list-style: none;
+                max-width: 720px;
+            }
+            .stats li {
+                border: 1px solid var(--line);
+                padding: 0.8rem 1rem;
+                background: var(--bg-surface);
+            }
+            .stats .label {
+                display: block;
+                color: var(--text-muted);
+                font-size: 0.68rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+            .stats .value {
+                display: block;
+                font-size: 1.15rem;
+                font-weight: 600;
+                color: var(--text);
+                margin-top: 0.2rem;
+            }
+            .pdf-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                border: 1px solid var(--line);
+                padding: 0.65rem 1rem;
+                background: var(--bg-surface);
+                color: var(--accent);
+                text-decoration: none;
+                margin: 0.5rem 0 1.5rem;
+            }
+            .pdf-link:hover {
+                background: var(--accent-soft);
+            }
+
+            /* chart section */
+            .chart-header {
+                display: flex;
+                align-items: end;
+                justify-content: space-between;
+                gap: 20px;
+                margin-bottom: 14px;
+            }
+            .chart-header h2 {
+                margin: 0;
+                font-family: "Source Serif 4", Georgia, serif;
+                font-size: 1.3rem;
+                font-weight: 500;
+            }
+            .chart-header .sub {
+                margin-top: 4px;
+                color: var(--text-soft);
+                font-size: 13px;
+            }
+            .tabs {
+                display: inline-flex;
+                gap: 4px;
+                padding: 4px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--bg-surface);
+            }
+            .tabs button {
+                appearance: none;
+                border: 0;
+                border-radius: 6px;
+                padding: 8px 12px;
+                background: transparent;
+                color: var(--text-soft);
+                font: inherit;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .tabs button.active {
+                background: var(--green);
+                color: #fff;
+            }
+            .chart-panel {
+                position: relative;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--bg-surface);
+                overflow: hidden;
+                padding: 12px 16px;
+            }
+            .chart-panel svg {
+                display: block;
+                width: 100%;
+                height: auto;
+                background: var(--bg-surface);
+            }
+            .axis-label {
+                fill: var(--text-soft);
+                font-size: 14px;
+                font-weight: 600;
+            }
+            .tick {
+                fill: var(--text-muted);
+                font-size: 12px;
+            }
+            .chart-title {
+                fill: var(--text);
+                font-size: 20px;
+                font-weight: 720;
+            }
+            .legend {
+                fill: var(--text-soft);
+                font-size: 13px;
+            }
+            .point {
+                cursor: crosshair;
+            }
+            /* kept labels removed */
+            .kept-label {
+                display: none;
+            }
+            .tooltip {
+                position: fixed;
+                z-index: 10;
+                min-width: 210px;
+                max-width: 320px;
+                padding: 10px 12px;
+                border: 1px solid rgba(16, 24, 40, 0.16);
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.96);
+                box-shadow: 0 16px 36px rgba(16, 24, 40, 0.18);
+                pointer-events: none;
+                opacity: 0;
+                transform: translate(10px, 10px);
+                transition: opacity 80ms ease;
+                backdrop-filter: blur(6px);
+            }
+            .tooltip.visible {
+                opacity: 1;
+            }
+            .tip-name {
+                font-weight: 760;
+                margin-bottom: 6px;
+            }
+            .tip-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 16px;
+                color: var(--text-muted);
+                font-size: 13px;
+                line-height: 1.55;
+            }
+            .tip-row strong {
+                color: var(--text);
+            }
+            @media (max-width: 760px) {
+                .chart-header {
+                    align-items: start;
+                    flex-direction: column;
+                }
+                .chart-panel svg {
+                    min-height: 460px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="proj-container">
+            <div class="proj-body">
+                <p>
+                    This is final project for <strong>STA326</strong>: a binary
+                    image-classification competition on meteorite
+                    identification.
+                </p>
+
+                <ul class="stats">
+                    <li>
+                        <span class="label">Training images</span
+                        ><span class="value">~5,000</span>
+                    </li>
+                    <li>
+                        <span class="label">Test images</span
+                        ><span class="value">194</span>
+                    </li>
+                    <li>
+                        <span class="label">Evaluation metric</span
+                        ><span class="value">Binary F1</span>
+                    </li>
+                    <li>
+                        <span class="label">Best test F1</span
+                        ><span class="value">0.81633</span>
+                    </li>
+                </ul>
+
+                <p>
+                    The full methodology are documented in the PDF report below.
+                    Every experiment dot in the chart represents one test
+                    submission — green dots mark a new best, grey dots were
+                    tried but not kept.
+                </p>
+
+                <a
+                    class="pdf-link"
+                    href="report.pdf"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Open detailed report (PDF)
+                </a>
+            </div>
+
+            <div class="chart-header">
+                <div>
+                    <h2>Experiment Progress</h2>
+                    <div class="sub">
+                        Hover any point to inspect the experiment. New/Old
+                        states for `before midterm` & `after midterm`
+                    </div>
+                </div>
+                <nav class="tabs" aria-label="Chart selection">
+                    <button class="active" data-chart="combined">
+                        Combined
+                    </button>
+                    <button data-chart="new">New</button>
+                    <button data-chart="old">Old</button>
+                </nav>
+            </div>
+
+            <div class="chart-panel">
+                <svg
+                    id="chart"
+                    role="img"
+                    aria-label="Experiment progress chart"
+                ></svg>
+                <div id="tooltip" class="tooltip" aria-hidden="true"></div>
+            </div>
+        </div>
+
+        <script>
+            const charts = {
+                old: {
+                    title: "Old-stage Experiment Progress",
+                    data: [
+                        {
+                            x: 1,
+                            name: "split baseline",
+                            score: 0.64516,
+                            best: 0.64516,
+                            kept: true,
+                        },
+                        {
+                            x: 2,
+                            name: "top-3 soup submit",
+                            score: 0.69856,
+                            best: 0.69856,
+                            kept: true,
+                        },
+                        {
+                            x: 3,
+                            name: "seed ensemble",
+                            score: 0.65968,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 4,
+                            name: "mytest split",
+                            score: 0.65979,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 5,
+                            name: "mytest pretrain",
+                            score: 0.55214,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 6,
+                            name: "mytest aug",
+                            score: 0.67021,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 7,
+                            name: "split-val aug",
+                            score: 0.63212,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 8,
+                            name: "small + mytest",
+                            score: 0.65263,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 9,
+                            name: "reduced not-stone",
+                            score: 0.71962,
+                            best: 0.71962,
+                            kept: true,
+                        },
+                        {
+                            x: 10,
+                            name: "restore 4 IDs",
+                            score: 0.71559,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 11,
+                            name: "top5 FP-risk zero",
+                            score: 0.7177,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 12,
+                            name: "zero 108/124/131",
+                            score: 0.7109,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 13,
+                            name: "frozen triple probe",
+                            score: 0.68224,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 14,
+                            name: "DINOv2 base",
+                            score: 0.70697,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 15,
+                            name: "DINOv2 small",
+                            score: 0.71962,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 16,
+                            name: "6-fold ensemble",
+                            score: 0.67924,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 17,
+                            name: "BN-adapt consensus",
+                            score: 0.72985,
+                            best: 0.72985,
+                            kept: true,
+                        },
+                        {
+                            x: 18,
+                            name: "surgical patch",
+                            score: 0.73429,
+                            best: 0.73429,
+                            kept: true,
+                        },
+                        {
+                            x: 19,
+                            name: "manual/web patch",
+                            score: 0.74146,
+                            best: 0.74146,
+                            kept: true,
+                        },
+                        {
+                            x: 20,
+                            name: "aggressive patch",
+                            score: 0.74747,
+                            best: 0.74747,
+                            kept: true,
+                        },
+                        {
+                            x: 21,
+                            name: "restore100+066",
+                            score: 0.74747,
+                            best: 0.74747,
+                            kept: false,
+                        },
+                        {
+                            x: 22,
+                            name: "restore 100=0",
+                            score: 0.75126,
+                            best: 0.75126,
+                            kept: true,
+                        },
+                        {
+                            x: 23,
+                            name: "zero 186/006/086/124",
+                            score: 0.74611,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 24,
+                            name: "zero 086/186",
+                            score: 0.74871,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                    ],
+                    splitAt: null,
+                },
+                new: {
+                    title: "New-stage Experiment Progress",
+                    data: [
+                        {
+                            x: 1,
+                            name: "SAM-mask AdamW",
+                            score: 0.54237,
+                            best: 0.54237,
+                            kept: true,
+                        },
+                        {
+                            x: 2,
+                            name: "SAM-mask SGD",
+                            score: 0.56889,
+                            best: 0.56889,
+                            kept: true,
+                        },
+                        {
+                            x: 3,
+                            name: "bbox AdamW 35ep",
+                            score: 0.63953,
+                            best: 0.63953,
+                            kept: true,
+                        },
+                        {
+                            x: 4,
+                            name: "bbox AdamW 65ep",
+                            score: 0.65432,
+                            best: 0.65432,
+                            kept: true,
+                        },
+                        {
+                            x: 5,
+                            name: "bbox top-3 soup",
+                            score: 0.65193,
+                            best: 0.65432,
+                            kept: false,
+                        },
+                        {
+                            x: 6,
+                            name: "bbox SGD",
+                            score: 0.69159,
+                            best: 0.69159,
+                            kept: true,
+                        },
+                        {
+                            x: 7,
+                            name: "+nomask originals",
+                            score: 0.70051,
+                            best: 0.70051,
+                            kept: true,
+                        },
+                        {
+                            x: 8,
+                            name: "mytest w=0.1",
+                            score: 0.69369,
+                            best: 0.70051,
+                            kept: false,
+                        },
+                        {
+                            x: 9,
+                            name: "old SOTA rerun",
+                            score: 0.70222,
+                            best: 0.70222,
+                            kept: true,
+                        },
+                        {
+                            x: 10,
+                            name: "mytest w=0.5",
+                            score: 0.66292,
+                            best: 0.70222,
+                            kept: false,
+                        },
+                        {
+                            x: 11,
+                            name: "TTA 4way",
+                            score: 0.68966,
+                            best: 0.70222,
+                            kept: false,
+                        },
+                        {
+                            x: 12,
+                            name: "seed123",
+                            score: 0.68817,
+                            best: 0.70222,
+                            kept: false,
+                        },
+                        {
+                            x: 13,
+                            name: "masked crop",
+                            score: 0.73684,
+                            best: 0.73684,
+                            kept: true,
+                        },
+                        {
+                            x: 14,
+                            name: "masked last",
+                            score: 0.71818,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 15,
+                            name: "white bg",
+                            score: 0.71429,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 16,
+                            name: "masked epoch10",
+                            score: 0.70435,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 17,
+                            name: "blr=5e-4",
+                            score: 0.69869,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 18,
+                            name: "white drop0",
+                            score: 0.69264,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 19,
+                            name: "white last",
+                            score: 0.68421,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 20,
+                            name: "long T0=20 ep40",
+                            score: 0.72072,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 21,
+                            name: "long T0=20 ep18",
+                            score: 0.71963,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 22,
+                            name: "long last",
+                            score: 0.66935,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 23,
+                            name: "black-test inference",
+                            score: 0.72072,
+                            best: 0.73684,
+                            kept: false,
+                        },
+                        {
+                            x: 24,
+                            name: "texture valid_patch",
+                            score: 0.73832,
+                            best: 0.73832,
+                            kept: true,
+                        },
+                        {
+                            x: 25,
+                            name: "seed256",
+                            score: 0.73239,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 26,
+                            name: "blr=4e-4",
+                            score: 0.72449,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 27,
+                            name: "blr=2e-4",
+                            score: 0.71233,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 28,
+                            name: "texture ep28",
+                            score: 0.7122,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 29,
+                            name: "no label smoothing",
+                            score: 0.7109,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 30,
+                            name: "restart T0=15",
+                            score: 0.70968,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 31,
+                            name: "cutmix 0.5",
+                            score: 0.70852,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 32,
+                            name: "mixup 0.5",
+                            score: 0.70769,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 33,
+                            name: "seed123 rerun",
+                            score: 0.70742,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 34,
+                            name: "texture TTA4",
+                            score: 0.73733,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 35,
+                            name: "texture TTA8",
+                            score: 0.73733,
+                            best: 0.73832,
+                            kept: false,
+                        },
+                        {
+                            x: 36,
+                            name: "tex+s256 equal",
+                            score: 0.75862,
+                            best: 0.75862,
+                            kept: true,
+                        },
+                        {
+                            x: 37,
+                            name: "tex+baseline",
+                            score: 0.75829,
+                            best: 0.75862,
+                            kept: false,
+                        },
+                        {
+                            x: 38,
+                            name: "tex+base+s256",
+                            score: 0.75701,
+                            best: 0.75862,
+                            kept: false,
+                        },
+                        {
+                            x: 39,
+                            name: "base+s256",
+                            score: 0.73892,
+                            best: 0.75862,
+                            kept: false,
+                        },
+                        {
+                            x: 40,
+                            name: "tex+s256 weighted",
+                            score: 0.76923,
+                            best: 0.76923,
+                            kept: true,
+                        },
+                        {
+                            x: 41,
+                            name: "tex+base weighted",
+                            score: 0.76056,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 42,
+                            name: "3-way weighted",
+                            score: 0.76923,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 43,
+                            name: "tex_cutmix",
+                            score: 0.74112,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 44,
+                            name: "seed1",
+                            score: 0.72489,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 45,
+                            name: "AdamW variant",
+                            score: 0.72043,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 46,
+                            name: "RandAugment",
+                            score: 0.71552,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 47,
+                            name: "tex seed256",
+                            score: 0.70899,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 48,
+                            name: "seed999",
+                            score: 0.70755,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 49,
+                            name: "big patch",
+                            score: 0.70339,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 50,
+                            name: "small patch",
+                            score: 0.68889,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 51,
+                            name: "tc+tex+s256",
+                            score: 0.77228,
+                            best: 0.77228,
+                            kept: true,
+                        },
+                        {
+                            x: 52,
+                            name: "tex+AdamW",
+                            score: 0.77157,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 53,
+                            name: "tc+tex+s256 equal",
+                            score: 0.76847,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 54,
+                            name: "multi-patch 4",
+                            score: 0.721,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 55,
+                            name: "multi-patch 8",
+                            score: 0.717,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 56,
+                            name: "multi-patch black",
+                            score: 0.677,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 57,
+                            name: "tc soup",
+                            score: 0.711,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 58,
+                            name: "rpt8 tiny",
+                            score: 0.72549,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 59,
+                            name: "rpt2 tiny",
+                            score: 0.69841,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 60,
+                            name: "rpt4 tiny",
+                            score: 0.69159,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 61,
+                            name: "small rpt2",
+                            score: 0.75455,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 62,
+                            name: "base rpt3",
+                            score: 0.67857,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 63,
+                            name: "ConvNeXt V2",
+                            score: 0.66932,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 64,
+                            name: "ConvNeXt V2 cutmix",
+                            score: 0.675,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 65,
+                            name: "sm+tc+tex+s256",
+                            score: 0.77885,
+                            best: 0.77885,
+                            kept: true,
+                        },
+                        {
+                            x: 66,
+                            name: "tc+tex+s256 v2",
+                            score: 0.77228,
+                            best: 0.77885,
+                            kept: false,
+                        },
+                        {
+                            x: 67,
+                            name: "sm+tex",
+                            score: 0.76684,
+                            best: 0.77885,
+                            kept: false,
+                        },
+                        {
+                            x: 68,
+                            name: "exhaustive ensemble",
+                            score: 0.78788,
+                            best: 0.78788,
+                            kept: true,
+                        },
+                        {
+                            x: 69,
+                            name: "small rpt2 restart ep10",
+                            score: 0.79365,
+                            best: 0.79365,
+                            kept: true,
+                        },
+                        {
+                            x: 70,
+                            name: "small rpt2 restart ep30",
+                            score: 0.77512,
+                            best: 0.79365,
+                            kept: false,
+                        },
+                        {
+                            x: 71,
+                            name: "small rpt4 restart",
+                            score: 0.76415,
+                            best: 0.79365,
+                            kept: false,
+                        },
+                        {
+                            x: 72,
+                            name: "final 3-model ensemble",
+                            score: 0.81633,
+                            best: 0.81633,
+                            kept: true,
+                        },
+                    ],
+                    splitAt: null,
+                },
+                combined: {
+                    title: "Full Project Experiment Progress",
+                    data: [
+                        {
+                            x: 1,
+                            name: "split baseline",
+                            score: 0.64516,
+                            best: 0.64516,
+                            kept: true,
+                        },
+                        {
+                            x: 2,
+                            name: "top-3 soup submit",
+                            score: 0.69856,
+                            best: 0.69856,
+                            kept: true,
+                        },
+                        {
+                            x: 3,
+                            name: "seed ensemble",
+                            score: 0.65968,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 4,
+                            name: "mytest split",
+                            score: 0.65979,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 5,
+                            name: "mytest pretrain",
+                            score: 0.55214,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 6,
+                            name: "mytest aug",
+                            score: 0.67021,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 7,
+                            name: "split-val aug",
+                            score: 0.63212,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 8,
+                            name: "small + mytest",
+                            score: 0.65263,
+                            best: 0.69856,
+                            kept: false,
+                        },
+                        {
+                            x: 9,
+                            name: "reduced not-stone",
+                            score: 0.71962,
+                            best: 0.71962,
+                            kept: true,
+                        },
+                        {
+                            x: 10,
+                            name: "restore 4 IDs",
+                            score: 0.71559,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 11,
+                            name: "top5 FP-risk zero",
+                            score: 0.7177,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 12,
+                            name: "zero 108/124/131",
+                            score: 0.7109,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 13,
+                            name: "frozen triple probe",
+                            score: 0.68224,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 14,
+                            name: "DINOv2 base",
+                            score: 0.70697,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 15,
+                            name: "DINOv2 small",
+                            score: 0.71962,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 16,
+                            name: "6-fold ensemble",
+                            score: 0.67924,
+                            best: 0.71962,
+                            kept: false,
+                        },
+                        {
+                            x: 17,
+                            name: "BN-adapt consensus",
+                            score: 0.72985,
+                            best: 0.72985,
+                            kept: true,
+                        },
+                        {
+                            x: 18,
+                            name: "surgical patch",
+                            score: 0.73429,
+                            best: 0.73429,
+                            kept: true,
+                        },
+                        {
+                            x: 19,
+                            name: "manual/web patch",
+                            score: 0.74146,
+                            best: 0.74146,
+                            kept: true,
+                        },
+                        {
+                            x: 20,
+                            name: "aggressive patch",
+                            score: 0.74747,
+                            best: 0.74747,
+                            kept: true,
+                        },
+                        {
+                            x: 21,
+                            name: "restore100+066",
+                            score: 0.74747,
+                            best: 0.74747,
+                            kept: false,
+                        },
+                        {
+                            x: 22,
+                            name: "restore 100=0",
+                            score: 0.75126,
+                            best: 0.75126,
+                            kept: true,
+                        },
+                        {
+                            x: 23,
+                            name: "zero 186/006/086/124",
+                            score: 0.74611,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 24,
+                            name: "zero 086/186",
+                            score: 0.74871,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 25,
+                            name: "SAM-mask AdamW",
+                            score: 0.54237,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 26,
+                            name: "SAM-mask SGD",
+                            score: 0.56889,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 27,
+                            name: "bbox AdamW 35ep",
+                            score: 0.63953,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 28,
+                            name: "bbox AdamW 65ep",
+                            score: 0.65432,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 29,
+                            name: "bbox top-3 soup",
+                            score: 0.65193,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 30,
+                            name: "bbox SGD",
+                            score: 0.69159,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 31,
+                            name: "+nomask originals",
+                            score: 0.70051,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 32,
+                            name: "mytest w=0.1",
+                            score: 0.69369,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 33,
+                            name: "old SOTA rerun",
+                            score: 0.70222,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 34,
+                            name: "mytest w=0.5",
+                            score: 0.66292,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 35,
+                            name: "TTA 4way",
+                            score: 0.68966,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 36,
+                            name: "seed123",
+                            score: 0.68817,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 37,
+                            name: "masked crop",
+                            score: 0.73684,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 38,
+                            name: "masked last",
+                            score: 0.71818,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 39,
+                            name: "white bg",
+                            score: 0.71429,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 40,
+                            name: "masked epoch10",
+                            score: 0.70435,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 41,
+                            name: "blr=5e-4",
+                            score: 0.69869,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 42,
+                            name: "white drop0",
+                            score: 0.69264,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 43,
+                            name: "white last",
+                            score: 0.68421,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 44,
+                            name: "long T0=20 ep40",
+                            score: 0.72072,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 45,
+                            name: "long T0=20 ep18",
+                            score: 0.71963,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 46,
+                            name: "long last",
+                            score: 0.66935,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 47,
+                            name: "black-test inference",
+                            score: 0.72072,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 48,
+                            name: "texture valid_patch",
+                            score: 0.73832,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 49,
+                            name: "seed256",
+                            score: 0.73239,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 50,
+                            name: "blr=4e-4",
+                            score: 0.72449,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 51,
+                            name: "blr=2e-4",
+                            score: 0.71233,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 52,
+                            name: "texture ep28",
+                            score: 0.7122,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 53,
+                            name: "no label smoothing",
+                            score: 0.7109,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 54,
+                            name: "restart T0=15",
+                            score: 0.70968,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 55,
+                            name: "cutmix 0.5",
+                            score: 0.70852,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 56,
+                            name: "mixup 0.5",
+                            score: 0.70769,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 57,
+                            name: "seed123 rerun",
+                            score: 0.70742,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 58,
+                            name: "texture TTA4",
+                            score: 0.73733,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 59,
+                            name: "texture TTA8",
+                            score: 0.73733,
+                            best: 0.75126,
+                            kept: false,
+                        },
+                        {
+                            x: 60,
+                            name: "tex+s256 equal",
+                            score: 0.75862,
+                            best: 0.75862,
+                            kept: true,
+                        },
+                        {
+                            x: 61,
+                            name: "tex+baseline",
+                            score: 0.75829,
+                            best: 0.75862,
+                            kept: false,
+                        },
+                        {
+                            x: 62,
+                            name: "tex+base+s256",
+                            score: 0.75701,
+                            best: 0.75862,
+                            kept: false,
+                        },
+                        {
+                            x: 63,
+                            name: "base+s256",
+                            score: 0.73892,
+                            best: 0.75862,
+                            kept: false,
+                        },
+                        {
+                            x: 64,
+                            name: "tex+s256 weighted",
+                            score: 0.76923,
+                            best: 0.76923,
+                            kept: true,
+                        },
+                        {
+                            x: 65,
+                            name: "tex+base weighted",
+                            score: 0.76056,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 66,
+                            name: "3-way weighted",
+                            score: 0.76923,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 67,
+                            name: "tex_cutmix",
+                            score: 0.74112,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 68,
+                            name: "seed1",
+                            score: 0.72489,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 69,
+                            name: "AdamW variant",
+                            score: 0.72043,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 70,
+                            name: "RandAugment",
+                            score: 0.71552,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 71,
+                            name: "tex seed256",
+                            score: 0.70899,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 72,
+                            name: "seed999",
+                            score: 0.70755,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 73,
+                            name: "big patch",
+                            score: 0.70339,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 74,
+                            name: "small patch",
+                            score: 0.68889,
+                            best: 0.76923,
+                            kept: false,
+                        },
+                        {
+                            x: 75,
+                            name: "tc+tex+s256",
+                            score: 0.77228,
+                            best: 0.77228,
+                            kept: true,
+                        },
+                        {
+                            x: 76,
+                            name: "tex+AdamW",
+                            score: 0.77157,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 77,
+                            name: "tc+tex+s256 equal",
+                            score: 0.76847,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 78,
+                            name: "multi-patch 4",
+                            score: 0.721,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 79,
+                            name: "multi-patch 8",
+                            score: 0.717,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 80,
+                            name: "multi-patch black",
+                            score: 0.677,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 81,
+                            name: "tc soup",
+                            score: 0.711,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 82,
+                            name: "rpt8 tiny",
+                            score: 0.72549,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 83,
+                            name: "rpt2 tiny",
+                            score: 0.69841,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 84,
+                            name: "rpt4 tiny",
+                            score: 0.69159,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 85,
+                            name: "small rpt2",
+                            score: 0.75455,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 86,
+                            name: "base rpt3",
+                            score: 0.67857,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 87,
+                            name: "ConvNeXt V2",
+                            score: 0.66932,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 88,
+                            name: "ConvNeXt V2 cutmix",
+                            score: 0.675,
+                            best: 0.77228,
+                            kept: false,
+                        },
+                        {
+                            x: 89,
+                            name: "sm+tc+tex+s256",
+                            score: 0.77885,
+                            best: 0.77885,
+                            kept: true,
+                        },
+                        {
+                            x: 90,
+                            name: "tc+tex+s256 v2",
+                            score: 0.77228,
+                            best: 0.77885,
+                            kept: false,
+                        },
+                        {
+                            x: 91,
+                            name: "sm+tex",
+                            score: 0.76684,
+                            best: 0.77885,
+                            kept: false,
+                        },
+                        {
+                            x: 92,
+                            name: "exhaustive ensemble",
+                            score: 0.78788,
+                            best: 0.78788,
+                            kept: true,
+                        },
+                        {
+                            x: 93,
+                            name: "small rpt2 restart ep10",
+                            score: 0.79365,
+                            best: 0.79365,
+                            kept: true,
+                        },
+                        {
+                            x: 94,
+                            name: "small rpt2 restart ep30",
+                            score: 0.77512,
+                            best: 0.79365,
+                            kept: false,
+                        },
+                        {
+                            x: 95,
+                            name: "small rpt4 restart",
+                            score: 0.76415,
+                            best: 0.79365,
+                            kept: false,
+                        },
+                        {
+                            x: 96,
+                            name: "final 3-model ensemble",
+                            score: 0.81633,
+                            best: 0.81633,
+                            kept: true,
+                        },
+                    ],
+                    splitAt: 24,
+                },
+            };
+
+            const svg = document.getElementById("chart");
+            const tooltip = document.getElementById("tooltip");
+            const tabs = document.querySelectorAll("[data-chart]");
+            let current = "combined";
+
+            function el(name, attrs, text) {
+                const node = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    name,
+                );
+                for (const [key, value] of Object.entries(attrs || {}))
+                    node.setAttribute(key, value);
+                if (text) node.textContent = text;
+                return node;
+            }
+
+            function fmt(v) {
+                return Number(v).toFixed(5);
+            }
+
+            function escapeHtml(s) {
+                return String(s)
+                    .replaceAll("&", "&amp;")
+                    .replaceAll("<", "&lt;")
+                    .replaceAll(">", "&gt;")
+                    .replaceAll('"', "&quot;");
+            }
+
+            function showTip(evt, d, isKept) {
+                tooltip.innerHTML = `
+    <div class="tip-name">${escapeHtml(d.name)}</div>
+    <div class="tip-row"><span>Experiment</span><strong>#${d.x}</strong></div>
+    <div class="tip-row"><span>Test F1</span><strong>${fmt(d.score)}</strong></div>
+    <div class="tip-row"><span>Running best</span><strong>${fmt(d.best)}</strong></div>
+    <div class="tip-row"><span>Status</span><strong>${isKept ? "new best" : "tried / not kept"}</strong></div>
+  `;
+                tooltip.classList.add("visible");
+                moveTip(evt);
+            }
+
+            function moveTip(evt) {
+                const pad = 18;
+                const rect = tooltip.getBoundingClientRect();
+                let x = evt.clientX + 14;
+                let y = evt.clientY + 14;
+                if (x + rect.width + pad > window.innerWidth)
+                    x = evt.clientX - rect.width - 14;
+                if (y + rect.height + pad > window.innerHeight)
+                    y = evt.clientY - rect.height - 14;
+                tooltip.style.left = `${Math.max(pad, x)}px`;
+                tooltip.style.top = `${Math.max(pad, y)}px`;
+            }
+
+            function hideTip() {
+                tooltip.classList.remove("visible");
+            }
+
+            function render(which) {
+                current = which;
+                tabs.forEach((btn) =>
+                    btn.classList.toggle("active", btn.dataset.chart === which),
+                );
+                while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+                const chart = charts[which];
+                const data = chart.data;
+                const width = 1100;
+                const height = 600;
+                const margin = { top: 52, right: 68, bottom: 68, left: 72 };
+                svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+                const scores = data.map((d) => d.score);
+                const xMax = data.length + 10;
+                const yMin = Math.max(0.5, Math.min(...scores) - 0.025);
+                const yMax = Math.min(0.85, Math.max(...scores) + 0.025);
+                const innerW = width - margin.left - margin.right;
+                const innerH = height - margin.top - margin.bottom;
+                const sx = (x) => margin.left + (x / xMax) * innerW;
+                const sy = (y) =>
+                    margin.top + (1 - (y - yMin) / (yMax - yMin)) * innerH;
+
+                svg.appendChild(
+                    el(
+                        "text",
+                        {
+                            x: width / 2,
+                            y: 30,
+                            class: "chart-title",
+                            "text-anchor": "middle",
+                        },
+                        `${chart.title}: ${data.length} test evaluations, ${data.filter((d) => d.kept).length} new bests`,
+                    ),
+                );
+
+                const yTicks = [];
+                const step = 0.05;
+                for (
+                    let v = Math.ceil(yMin / step) * step;
+                    v <= yMax + 1e-9;
+                    v += step
+                )
+                    yTicks.push(Number(v.toFixed(2)));
+                yTicks.forEach((v) => {
+                    svg.appendChild(
+                        el("line", {
+                            x1: margin.left,
+                            x2: width - margin.right,
+                            y1: sy(v),
+                            y2: sy(v),
+                            stroke: "var(--line)",
+                            "stroke-width": 1,
+                        }),
+                    );
+                    svg.appendChild(
+                        el(
+                            "text",
+                            {
+                                x: margin.left - 12,
+                                y: sy(v) + 4,
+                                class: "tick",
+                                "text-anchor": "end",
+                            },
+                            v.toFixed(2),
+                        ),
+                    );
+                });
+
+                const xStep = data.length > 80 ? 20 : data.length > 35 ? 10 : 5;
+                for (let v = 0; v <= data.length; v += xStep) {
+                    svg.appendChild(
+                        el("line", {
+                            x1: sx(v),
+                            x2: sx(v),
+                            y1: margin.top,
+                            y2: height - margin.bottom,
+                            stroke: "var(--line)",
+                            "stroke-width": 1,
+                        }),
+                    );
+                    svg.appendChild(
+                        el(
+                            "text",
+                            {
+                                x: sx(v),
+                                y: height - margin.bottom + 24,
+                                class: "tick",
+                                "text-anchor": "middle",
+                            },
+                            String(v),
+                        ),
+                    );
+                }
+
+                svg.appendChild(
+                    el("line", {
+                        x1: margin.left,
+                        x2: width - margin.right,
+                        y1: height - margin.bottom,
+                        y2: height - margin.bottom,
+                        stroke: "var(--text-soft)",
+                        "stroke-width": 1.2,
+                    }),
+                );
+                svg.appendChild(
+                    el("line", {
+                        x1: margin.left,
+                        x2: margin.left,
+                        y1: margin.top,
+                        y2: height - margin.bottom,
+                        stroke: "var(--text-soft)",
+                        "stroke-width": 1.2,
+                    }),
+                );
+                svg.appendChild(
+                    el(
+                        "text",
+                        {
+                            x: width / 2,
+                            y: height - 22,
+                            class: "axis-label",
+                            "text-anchor": "middle",
+                        },
+                        "Experiment #",
+                    ),
+                );
+                const ylabel = el(
+                    "text",
+                    {
+                        x: 22,
+                        y: height / 2,
+                        class: "axis-label",
+                        "text-anchor": "middle",
+                        transform: `rotate(-90 22 ${height / 2})`,
+                    },
+                    "Test F1 (higher is better)",
+                );
+                svg.appendChild(ylabel);
+
+                if (chart.splitAt) {
+                    const x = sx(chart.splitAt + 0.5);
+                    svg.appendChild(
+                        el("line", {
+                            x1: x,
+                            x2: x,
+                            y1: margin.top,
+                            y2: height - margin.bottom,
+                            stroke: "var(--text-muted)",
+                            "stroke-dasharray": "5 4",
+                            "stroke-width": 1.2,
+                        }),
+                    );
+                    svg.appendChild(
+                        el(
+                            "text",
+                            { x: x + 8, y: margin.top + 24, class: "tick" },
+                            "new phase",
+                        ),
+                    );
+                }
+
+                let path = "";
+                data.forEach((d, i) => {
+                    const x = sx(d.x);
+                    const y = sy(d.best);
+                    if (i === 0) path += `M ${x} ${y}`;
+                    else {
+                        const px = sx(data[i - 1].x);
+                        const py = sy(data[i - 1].best);
+                        path += ` L ${x} ${py} L ${x} ${y}`;
+                    }
+                });
+                svg.appendChild(
+                    el("path", {
+                        d: path,
+                        fill: "none",
+                        stroke: "var(--green)",
+                        "stroke-width": 2.8,
+                        opacity: 0.72,
+                    }),
+                );
+
+                data.forEach((d) => {
+                    const circle = el("circle", {
+                        cx: sx(d.x),
+                        cy: sy(d.score),
+                        r: d.kept ? 5.6 : 4.2,
+                        fill: d.kept ? "var(--green)" : "var(--gray)",
+                        stroke: d.kept ? "var(--green-dark)" : "#777",
+                        "stroke-width": d.kept ? 1.3 : 0.7,
+                        opacity: d.kept ? 0.98 : 0.72,
+                        class: "point",
+                    });
+                    circle.addEventListener("mouseenter", (evt) =>
+                        showTip(evt, d, d.kept),
+                    );
+                    circle.addEventListener("mousemove", moveTip);
+                    circle.addEventListener("mouseleave", hideTip);
+                    svg.appendChild(circle);
+                });
+
+                const offsets = [16, -22, 34, -38, 52, -56];
+                data.filter((d) => d.kept).forEach((d, i) => {
+                    const label = el("text", {
+                        x: sx(d.x) + 7,
+                        y: sy(d.score) + offsets[i % offsets.length],
+                        class: "kept-label",
+                        transform: `rotate(-16 ${sx(d.x) + 7} ${sy(d.score) + offsets[i % offsets.length]})`,
+                    });
+                    const t1 = el("tspan", { x: sx(d.x) + 7, dy: 0 }, d.name);
+                    const t2 = el(
+                        "tspan",
+                        { x: sx(d.x) + 7, dy: 13 },
+                        fmt(d.score),
+                    );
+                    label.appendChild(t1);
+                    label.appendChild(t2);
+                    svg.appendChild(label);
+                });
+
+                const legendX = width - 150;
+                const legendY = height - 68;
+                svg.appendChild(
+                    el("rect", {
+                        x: legendX - 12,
+                        y: legendY - 24,
+                        width: 150,
+                        height: 64,
+                        rx: 6,
+                        fill: "white",
+                        stroke: "var(--line)",
+                    }),
+                );
+                svg.appendChild(
+                    el("circle", {
+                        cx: legendX,
+                        cy: legendY - 4,
+                        r: 4.2,
+                        fill: "var(--gray)",
+                        opacity: 0.72,
+                        stroke: "#777",
+                    }),
+                );
+                svg.appendChild(
+                    el(
+                        "text",
+                        { x: legendX + 14, y: legendY, class: "legend" },
+                        "Tried / not kept",
+                    ),
+                );
+                svg.appendChild(
+                    el("circle", {
+                        cx: legendX,
+                        cy: legendY + 20,
+                        r: 5.6,
+                        fill: "var(--green)",
+                        stroke: "var(--green-dark)",
+                    }),
+                );
+                svg.appendChild(
+                    el(
+                        "text",
+                        { x: legendX + 14, y: legendY + 24, class: "legend" },
+                        "New best",
+                    ),
+                );
+            }
+
+            tabs.forEach((btn) =>
+                btn.addEventListener("click", () => render(btn.dataset.chart)),
+            );
+            render(current);
+
+            function reportHeight() {
+                const h = Math.ceil(document.documentElement.scrollHeight);
+                parent.postMessage({ type: "iframe-height", height: h }, "*");
+            }
+            if (window.ResizeObserver) {
+                new ResizeObserver(reportHeight).observe(document.body);
+            } else {
+                window.addEventListener("load", reportHeight);
+                window.addEventListener("resize", reportHeight);
+            }
+            tabs.forEach((btn) =>
+                btn.addEventListener("click", () =>
+                    setTimeout(reportHeight, 50),
+                ),
+            );
+        </script>
+    </body>
+</html>
