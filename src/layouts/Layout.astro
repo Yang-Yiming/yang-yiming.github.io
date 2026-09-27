@@ -1,0 +1,37 @@
+---
+import "../styles.css";
+import { siteMeta } from "../content/siteMeta";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = siteMeta.name, description = "Personal homepage for Yang Yiming." } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+    <script is:inline>
+      const root = document.documentElement;
+      const updateLanding = () => root.style.setProperty('--landing-progress', String(Math.min(1, Math.max(0, scrollY / innerHeight))));
+      addEventListener('scroll', updateLanding, { passive: true });
+      updateLanding();
+      document.querySelector('[data-enter]')?.addEventListener('click', () => scrollTo({ top: innerHeight, behavior: 'smooth' }));
+      document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        localStorage.setItem('theme-mode', next);
+      });
+      const savedTheme = localStorage.getItem('theme-mode');
+      if (savedTheme) root.dataset.theme = savedTheme;
+    </script>
+  </body>
+</html>

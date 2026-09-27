@@ -6,3 +6,4 @@ vite.config.d.ts
 .DS_Store
 .playwright-cli
 .playwright-mcp/
+.astro

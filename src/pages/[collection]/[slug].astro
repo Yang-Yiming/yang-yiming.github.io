@@ -1,0 +1,18 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SiteHeader from "../../components/SiteHeader.astro";
+import { allEntries, getEntry } from "../../content/entries";
+import { renderMarkdown, resolveAssetUrls } from "../../lib/astroMarkdown";
+
+export function getStaticPaths() {
+  return allEntries.map((entry) => ({ params: { collection: entry.collectionId, slug: entry.slug }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const collectionLabel = entry.collectionId.charAt(0).toUpperCase() + entry.collectionId.slice(1);
+const embeddedHref = entry.externalHref ?? entry.source;
+const contentHtml = entry.kind === "markdown" && entry.content ? resolveAssetUrls(renderMarkdown(entry.content), entry.assetBase) : entry.kind === "html" && entry.content ? entry.content : "";
+---
+<Layout title={`${entry.title} · Yang Yiming`} description={entry.summary}>
+  <div class="page-shell"><SiteHeader activeSection={entry.collectionId} /><main class="page-main"><article class="entry-page"><div class="entry-page__header"><a class="entry-page__backlink" href={`/#${entry.collectionId}`}>← <span>Back to {collectionLabel}</span></a><p class="section-kicker">{entry.kicker ?? entry.meta}</p><h1 class="entry-page__title">{entry.title}</h1><p class="entry-page__meta">{entry.meta}</p><p class="entry-page__summary">{entry.summary}</p></div><div class="entry-page__content" set:html={contentHtml} />{entry.open === "iframe" && embeddedHref ? <iframe class="entry-page__frame" src={embeddedHref} title={entry.title} /> : null}{(entry.open === "native" || entry.kind === "link") && embeddedHref ? <p><a href={embeddedHref}>Open {entry.title}</a></p> : null}</article></main></div>
+</Layout>

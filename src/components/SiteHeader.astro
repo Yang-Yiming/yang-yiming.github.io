@@ -1,0 +1,28 @@
+---
+import { sections, siteMeta } from "../content";
+
+interface Props {
+  activeSection?: string;
+  isHome?: boolean;
+}
+
+const { activeSection = "home", isHome = false } = Astro.props;
+---
+<header class:list={["site-header", isHome && "site-header--home", !isHome && "site-header--compact"]}>
+  <div class="site-header__inner">
+    <a class="site-mark" href="/">
+      <span class="site-mark__name">{siteMeta.name}</span>
+      <span class="site-mark__role">{siteMeta.role}</span>
+    </a>
+    <div class="site-header__controls">
+      <nav aria-label="Section navigation" class="site-nav">
+        {sections.map((section) => (
+          <a class:list={["site-nav__link", section.id === activeSection && "is-active"]} href={section.id === "home" ? "/" : `/#${section.id}`}>
+            {section.navLabel}
+          </a>
+        ))}
+      </nav>
+      <button class="theme-toggle__button" type="button" data-theme-toggle aria-label="Switch theme">◐</button>
+    </div>
+  </div>
+</header>
