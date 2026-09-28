@@ -27,9 +27,9 @@ export const sections: SectionContent[] = [
     kicker: "Index / 03",
     title: "Research",
     intro:
-      "Now I am an undergraduate and hope to contribute to the research community.\n\
-      My interests lie in autoregressive multimodal LLMs, and I aim to explore ways \
-      to go beyond language toward broader capabilities.",
+      "As an undergraduate, I hope to contribute to the research community.\n\n" +
+      "My interests lie in autoregressive multimodal LLMs, and I aim to explore ways " +
+      "to go beyond language toward broader capabilities.",
     items: [
       // {
       //   title: "Theme Placeholder",
@@ -51,8 +51,8 @@ export const sections: SectionContent[] = [
     kicker: "Index / 04",
     title: "Things I do and love",
     intro:
-      "Not everything belongs in a project log.\
-      This section leaves room for my hobbies, habits, books, music, etc.",
+      "Not everything belongs in a project log. " +
+      "This section leaves room for my hobbies, habits, books, music, and more.",
     items: getEntrySectionItems("life"),
   },
   {
@@ -61,7 +61,7 @@ export const sections: SectionContent[] = [
     kicker: "Index / 05",
     title: "Blog",
     intro:
-      "The blog will eventually house writing that sits between documentation and reflection, any words could be here.",
+      "Writing that sits between documentation and reflection. Course projects, notes, and anything else worth putting into words.",
     items: getEntrySectionItems("blog"),
   },
   {

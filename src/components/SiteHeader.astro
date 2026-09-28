@@ -8,21 +8,26 @@ interface Props {
 
 const { activeSection = "home", isHome = false } = Astro.props;
 ---
-<header class:list={["site-header", isHome && "site-header--home", !isHome && "site-header--compact"]}>
+<header class:list={["site-header", isHome && "site-header--home"]}>
   <div class="site-header__inner">
     <a class="site-mark" href="/">
       <span class="site-mark__name">{siteMeta.name}</span>
       <span class="site-mark__role">{siteMeta.role}</span>
     </a>
     <div class="site-header__controls">
-      <nav aria-label="Section navigation" class="site-nav">
+      <nav aria-label="Section navigation" class="site-nav" data-spy={isHome ? "" : undefined}>
         {sections.map((section) => (
-          <a class:list={["site-nav__link", section.id === activeSection && "is-active"]} href={section.id === "home" ? "/" : `/#${section.id}`}>
+          <a
+            class:list={["site-nav__link", section.id === activeSection && "is-active"]}
+            href={section.id === "home" ? "/" : `/#${section.id}`}
+            data-section={section.id}
+            aria-current={section.id === activeSection ? "true" : undefined}
+          >
             {section.navLabel}
           </a>
         ))}
       </nav>
-      <button class="theme-toggle__button" type="button" data-theme-toggle aria-label="Switch theme">◐</button>
+      <button class="theme-toggle__button" type="button" data-theme-toggle aria-label="Toggle color theme">◐</button>
     </div>
   </div>
 </header>

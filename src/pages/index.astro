@@ -9,12 +9,22 @@ import { renderInlineMarkdown, renderMarkdown } from "../lib/astroMarkdown";
 const home = sections[0];
 ---
 <Layout>
-  <div class="page-shell page-shell--has-landing">
+  <div class="page-shell">
     <SiteHeader isHome activeSection="home" />
-    <section class="landing" aria-label="Intro"><div class="landing__content"><p class="landing__greeting">Hello</p><p class="landing__name">{siteMeta.name}</p><p class="landing__role">{siteMeta.role}</p></div></section>
-    <button class="landing__hint" type="button" data-enter aria-label="Enter site"><span>Scroll</span><span class="landing__hint-arrow">↓</span></button>
     <main class="page-main">
-      <section class="hero section-frame" id="home"><div class="hero__masthead"><div class="hero__lead"><p class="section-kicker" data-section-anchor="home">{home.kicker}</p><p class="hero__availability">{siteMeta.accentLabel}</p><a class="section-heading-link section-heading-link--hero" href="#home"><span aria-hidden="true" class="section-heading-link__anchor">#</span><h1 class="hero__title" set:html={renderInlineMarkdown(home.title)} /></a><div class="hero__summary" set:html={renderMarkdown(siteMeta.summary)} /></div><div class="hero-ghost" aria-hidden="true"><div class="ghost-face"></div></div></div><div class="hero__columns"><div class="hero__column"><p class="section-kicker">Overview</p><div class="hero__body" set:html={renderMarkdown(home.intro)} /></div><div class="hero__column hero__column--index"><p class="section-kicker">Quick entry</p><div class="hero__index">{sections.slice(1, 4).map((section) => <a class="hero__index-link" href={`#${section.id}`}><span>{section.navLabel}<span class="hero__index-arrow"> →</span></span><span>{section.kicker}</span></a>)}</div></div><div class="hero__column hero__column--links"><p class="section-kicker">Elsewhere</p><div class="hero__links">{siteMeta.links.map((link) => <a class="hero__link" href={link.href} target="_blank" rel="noreferrer"><span class="hero__link-label">{link.label}</span></a>)}</div></div></div></section>
+      <section class="hero section-frame" id="home">
+        <div class="hero__lead">
+          <p class="section-kicker">{home.kicker}</p>
+          <a class="section-heading-link section-heading-link--hero" href="#home"><span aria-hidden="true" class="section-heading-link__anchor">#</span><h1 class="hero__title" set:html={renderInlineMarkdown(home.title)} /></a>
+          <div class="hero__summary" set:html={renderMarkdown(siteMeta.summary)} />
+          <p class="hero__availability">{siteMeta.accentLabel}</p>
+        </div>
+        <div class="hero__columns">
+          <div class="hero__column"><p class="section-kicker">Overview</p><div class="hero__body" set:html={renderMarkdown(home.intro)} /></div>
+          <div class="hero__column hero__column--index"><p class="section-kicker">Quick entry</p><div class="hero__index">{sections.slice(1, 4).map((section) => <a class="hero__index-link" href={`#${section.id}`}><span>{section.navLabel}<span class="hero__index-arrow"> →</span></span><span>{section.kicker}</span></a>)}</div></div>
+          <div class="hero__column hero__column--links"><p class="section-kicker">Elsewhere</p><div class="hero__links">{siteMeta.links.map((link) => <a class="hero__link" href={link.href} target="_blank" rel="noreferrer"><span class="hero__link-label">{link.label}</span><span class="hero__index-arrow">↗</span></a>)}</div></div>
+        </div>
+      </section>
       {sections.slice(1).map((section) => section.id === "projects" ? <Projects section={section} /> : <Section section={section} />)}
     </main>
   </div>

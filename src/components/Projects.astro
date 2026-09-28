@@ -5,7 +5,7 @@ import { getRepoLabel } from "../lib/github";
 
 interface Props { section: SectionContent }
 const { section } = Astro.props;
-const languageColors: Record<string, string> = { Swift: "#ffac45", Rust: "#dea584", JavaScript: "#f1e05a", Javascript: "#f1e05a", Python: "#3572A5" };
+const languageColors: Record<string, string> = { Swift: "#ffac45", Rust: "#dea584", JavaScript: "#f1e05a", Python: "#3572A5" };
 ---
 <section class="editorial-section section-frame" id={section.id}>
   <div class="section-header"><div class="section-heading"><p class="section-kicker" data-section-anchor={section.id}>{section.kicker}</p><a class="section-heading-link" href={`#${section.id}`}><span aria-hidden="true" class="section-heading-link__anchor">#</span><h2 class="section-title" set:html={renderInlineMarkdown(section.title)} /></a></div><div class="section-body"><p class="section-source-label">{section.sourceLabel}</p><div class="section-intro" set:html={renderMarkdown(section.intro)} /></div></div>

@@ -38,11 +38,6 @@ export interface GitHubProjectGroup {
   items: GitHubProject[];
 }
 
-export interface HeroImage {
-  src: string;
-  alt: string;
-  caption: string;
-}
 
 export interface SiteLink {
   label: string;
