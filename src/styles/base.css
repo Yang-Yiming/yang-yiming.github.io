@@ -210,17 +210,22 @@ select {
 }
 
 .section-heading-link {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.55rem;
+    position: relative;
+    display: block;
     width: fit-content;
 }
 
+/* Hangs in the left margin so the title stays flush with the kicker. */
 .section-heading-link__anchor {
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    margin-right: 0.6rem;
     color: var(--text-muted);
     font-size: 0.9rem;
     letter-spacing: 0.04em;
     opacity: 0;
+    translate: 0 -50%;
     transform: translateX(-0.2rem);
     transition:
         opacity var(--transition),
