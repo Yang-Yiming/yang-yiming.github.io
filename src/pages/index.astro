@@ -3,9 +3,10 @@ import Layout from "../layouts/Layout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import Section from "../components/Section.astro";
 import Projects from "../components/Projects.astro";
-import { sections, siteMeta } from "../content";
+import { getSections, siteMeta } from "../content";
 import { renderInlineMarkdown, renderMarkdown } from "../lib/astroMarkdown";
 
+const sections = await getSections();
 const home = sections[0];
 ---
 <Layout>

@@ -60,7 +60,7 @@ export interface EntryFrontmatter {
   title: string;
   summary: string;
   meta: string;
-  date?: string;
+  date?: Date;
   kicker?: string;
   coverImage?: string;
   coverAlt?: string;
@@ -72,8 +72,6 @@ export interface EntryRecord extends EntryFrontmatter {
   open: EntryOpenMode;
   slug: string;
   href: string;
-  assetBase?: string;
-  source?: string;
   externalHref?: string;
-  content?: string;
+  sourceEntry: unknown;
 }

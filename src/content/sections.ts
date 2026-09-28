@@ -2,7 +2,22 @@ import type { SectionContent } from "../types";
 import { getEntrySectionItems } from "./entries";
 import { githubProjectGroups } from "./projects";
 
-export const sections: SectionContent[] = [
+export const sectionNavigation = [
+  ["home", "Home"],
+  ["projects", "Projects"],
+  ["research", "Research"],
+  ["life", "Life"],
+  ["blog", "Blog"],
+  ["fun", "Fun!"],
+] as const;
+
+export async function getSections(): Promise<SectionContent[]> {
+  const [lifeItems, blogItems] = await Promise.all([
+    getEntrySectionItems("life"),
+    getEntrySectionItems("blog"),
+  ]);
+
+  return [
   {
     id: "home",
     navLabel: "Home",
@@ -53,7 +68,7 @@ export const sections: SectionContent[] = [
     intro:
       "Not everything belongs in a project log. " +
       "This section leaves room for my hobbies, habits, books, music, and more.",
-    items: getEntrySectionItems("life"),
+    items: lifeItems,
   },
   {
     id: "blog",
@@ -62,7 +77,7 @@ export const sections: SectionContent[] = [
     title: "Blog",
     intro:
       "Writing that sits between documentation and reflection. Course projects, notes, and anything else worth putting into words.",
-    items: getEntrySectionItems("blog"),
+    items: blogItems,
   },
   {
     id: "fun",
@@ -72,4 +87,5 @@ export const sections: SectionContent[] = [
     intro: "Developing...",
     items: [],
   },
-];
+  ];
+}

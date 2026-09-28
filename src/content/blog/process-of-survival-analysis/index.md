@@ -1,3 +1,11 @@
+---
+title: Process of Survival Analysis
+summary: "STA323 course project 1, an example of survival analysis using PySpark."
+meta: April 2026
+date: 2026-04-18
+kicker: Blog / 01
+---
+
 This analysis aims to characterize customer churn behavior in IBM's Telco dataset using survival analysis methods, with _tenure_ (months of subscription) as the time-to-event variable and _churn_ as the event of interest.
 
 ## Data Preprocessing

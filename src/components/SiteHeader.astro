@@ -1,5 +1,6 @@
 ---
-import { sections, siteMeta } from "../content";
+import { sectionNavigation } from "../content";
+import { siteMeta } from "../content/siteMeta";
 
 interface Props {
   activeSection?: string;
@@ -16,14 +17,14 @@ const { activeSection = "home", isHome = false } = Astro.props;
     </a>
     <div class="site-header__controls">
       <nav aria-label="Section navigation" class="site-nav" data-spy={isHome ? "" : undefined}>
-        {sections.map((section) => (
+        {sectionNavigation.map(([id, navLabel]) => (
           <a
-            class:list={["site-nav__link", section.id === activeSection && "is-active"]}
-            href={section.id === "home" ? "/" : `/#${section.id}`}
-            data-section={section.id}
-            aria-current={section.id === activeSection ? "true" : undefined}
+            class:list={["site-nav__link", id === activeSection && "is-active"]}
+            href={id === "home" ? "/" : `/#${id}`}
+            data-section={id}
+            aria-current={id === activeSection ? "true" : undefined}
           >
-            {section.navLabel}
+            {navLabel}
           </a>
         ))}
       </nav>

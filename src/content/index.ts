@@ -1,3 +1,3 @@
 export { siteMeta } from "./siteMeta";
-export { sections } from "./sections";
-export { allEntries, getEntries, getEntry } from "./entries";
+export { getSections, sectionNavigation } from "./sections";
+export { getAllEntries, getEntries, getEntry } from "./entries";
