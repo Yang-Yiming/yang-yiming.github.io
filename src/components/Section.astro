@@ -1,36 +1,28 @@
 ---
-import type { SectionContent } from "../types";
-import { renderInlineMarkdown, renderMarkdown } from "../lib/astroMarkdown";
+import SectionHeader from "./SectionHeader.astro";
+import ListRow from "./ListRow.astro";
+import { entryHref, entryLabel, isEntryCollection, getEntries, type Section } from "../lib/content";
 
-interface Props { section: SectionContent }
+interface Props {
+  section: Section;
+}
+
 const { section } = Astro.props;
+const entries = isEntryCollection(section.id) ? await getEntries(section.id) : [];
 ---
 <section class="editorial-section section-frame" id={section.id}>
-  <div class="section-header">
-    <div class="section-heading">
-      <p class="section-kicker" data-section-anchor={section.id}>{section.kicker}</p>
-      <a aria-label={`Link to ${section.navLabel} section`} class="section-heading-link" href={`#${section.id}`}>
-        <span aria-hidden="true" class="section-heading-link__anchor">#</span>
-        <h2 class="section-title" set:html={renderInlineMarkdown(section.title)} />
-      </a>
-    </div>
-    <div class="section-body">
-      {section.sourceLabel && <p class="section-source-label">{section.sourceLabel}</p>}
-      <div class="section-intro" set:html={renderMarkdown(section.intro)} />
-    </div>
-  </div>
-  {section.items?.length ? (
+  <SectionHeader section={section} />
+  {entries.length > 0 && (
     <div class="section-list">
-      {section.items.map((item) => (
-        item.href ? (
-          <a class="list-row list-row--link" href={item.href}>
-            <p class="list-row__meta">{item.meta}</p>
-            <div class="list-row__body"><h3 class="list-row__title" set:html={renderInlineMarkdown(item.title)} /><div class="list-row__description" set:html={renderMarkdown(item.description)} /></div>
-          </a>
-        ) : (
-          <article class="list-row"><p class="list-row__meta">{item.meta}</p><div class="list-row__body"><h3 class="list-row__title" set:html={renderInlineMarkdown(item.title)} /><div class="list-row__description" set:html={renderMarkdown(item.description)} /></div></article>
-        )
+      {entries.map((entry) => (
+        <ListRow
+          href={entryHref(entry)}
+          label={entryLabel(entry)}
+          title={entry.data.title}
+          description={entry.data.summary}
+          external={Boolean(entry.data.external)}
+        />
       ))}
     </div>
-  ) : null}
+  )}
 </section>

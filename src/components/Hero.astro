@@ -1,0 +1,58 @@
+---
+import Ghost from "./Ghost.astro";
+import { site } from "../content/site";
+import type { Section } from "../lib/content";
+
+interface Props {
+  home: Section;
+  sections: Section[];
+}
+
+const { home, sections } = Astro.props;
+const quickLinks = site.quickLinks
+  .map((id) => sections.find((section) => section.id === id))
+  .filter((section) => section !== undefined);
+---
+<section class="hero" id="home" data-ghost-trigger>
+  <div class="hero__masthead">
+    <div class="hero__lead">
+      <p class="section-kicker">{home.kicker}</p>
+      <a class="section-heading-link" href="#home" aria-label="Link to Home section">
+        <span aria-hidden="true" class="section-heading-link__anchor">#</span>
+        <h1 class="hero__title">{home.data.title}</h1>
+      </a>
+      <p class="hero__summary">{site.summary}</p>
+      <p class="hero__tagline">{site.tagline}</p>
+    </div>
+    <Ghost />
+  </div>
+
+  <div class="hero__columns">
+    <div class="hero__column">
+      <p class="section-kicker">Overview</p>
+      <div class="hero__body prose-inline" set:html={home.rendered?.html} />
+    </div>
+    <div class="hero__column">
+      <p class="section-kicker">Quick entry</p>
+      <div class="hero__index">
+        {quickLinks.map((section) => (
+          <a class="hero__index-link" href={`#${section.id}`}>
+            <span>{section.data.nav}<span class="hero__index-arrow" aria-hidden="true"> →</span></span>
+            <span class="hero__index-kicker">{section.kicker}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+    <div class="hero__column">
+      <p class="section-kicker">Elsewhere</p>
+      <div class="hero__index">
+        {site.links.map((link) => (
+          <a class="hero__index-link" href={link.href} target="_blank" rel="noreferrer">
+            <span>{link.label}</span>
+            <span class="hero__index-arrow" aria-hidden="true">↗</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

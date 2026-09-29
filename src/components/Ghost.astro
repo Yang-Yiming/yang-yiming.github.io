@@ -1,0 +1,119 @@
+---
+import { getImage } from "astro:assets";
+
+// Every image dropped into src/assets/ghost/ can appear on the ghost's face.
+const modules = import.meta.glob<{ default: ImageMetadata }>("../assets/ghost/*.{png,jpg,jpeg,webp,avif}", { eager: true });
+const photos = await Promise.all(
+  Object.values(modules).map(async ({ default: src }) => (await getImage({ src, width: 170, format: "webp" })).src),
+);
+---
+<div class="hero-ghost" aria-hidden="true" data-ghost data-photos={JSON.stringify(photos)}>
+  <svg width="0" height="0" style="position: absolute">
+    <defs>
+      <clipPath id="ghost-clip" clipPathUnits="objectBoundingBox">
+        <path d="M0,0 L1,0 L1,0.846 A0.1,0.077 0 0,1 0.8,0.846 A0.1,0.077 0 0,0 0.6,0.846 A0.1,0.077 0 0,1 0.4,0.846 A0.1,0.077 0 0,0 0.2,0.846 A0.1,0.077 0 0,1 0,0.846 Z" />
+      </clipPath>
+    </defs>
+  </svg>
+  <div class="scene">
+    <div class="sym sx" style="left: 18px; top: 148px"></div>
+    <div class="sym sc" style="left: 10px; top: 192px; width: 18px; height: 18px"></div>
+    <div class="sym sp" style="left: 44px; bottom: 168px"></div>
+    <div class="sym sx" style="right: 20px; top: 140px"></div>
+    <div class="sym sc" style="right: 10px; top: 186px; width: 14px; height: 14px"></div>
+    <div class="sym sp" style="right: 44px; bottom: 168px"></div>
+    <div class="ghost">
+      <div class="ghost-face" data-face>
+        <div class="ghost-eyes" data-eyes>
+          <div class="eye eye-l"></div>
+          <div class="eye eye-r"></div>
+        </div>
+      </div>
+      <div class="ghost-photo-face" data-photo-face>
+        {photos[0] && <img class="ghost-photo-face__image" src={photos[0]} alt="" decoding="async" />}
+      </div>
+      <div class="ghost-feet"><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>("[data-ghost]");
+  const face = root?.querySelector<HTMLElement>("[data-face]");
+  const eyeContainer = root?.querySelector<HTMLElement>("[data-eyes]");
+  const photoFace = root?.querySelector<HTMLElement>("[data-photo-face]");
+
+  if (root && face && eyeContainer && photoFace) {
+    const eyes = [...eyeContainer.querySelectorAll<HTMLElement>(".eye")];
+    const photoImage = photoFace.querySelector("img");
+    const photos: string[] = JSON.parse(root.dataset.photos ?? "[]");
+    const preloaded = photos.map((src) => Object.assign(new Image(), { src }));
+    let busy = false;
+    let lastWasHappy: boolean | null = null;
+
+    const happy = () => {
+      const ready = preloaded.filter((image) => image.complete);
+      const photo = ready[Math.floor(Math.random() * ready.length)];
+      if (photo && photoImage) photoImage.src = photo.src;
+
+      face.style.setProperty("--face-start-pos", getComputedStyle(face).transform);
+      eyeContainer.style.setProperty("--eye-start-pos", getComputedStyle(eyeContainer).transform);
+      face.classList.add("face-happy-active");
+      eyeContainer.classList.add("eye-happy-active");
+      if (photo) photoFace.classList.add("photo-happy-active");
+      eyes.forEach((eye) => eye.classList.add("happy"));
+
+      setTimeout(() => {
+        eyes.forEach((eye) => eye.classList.remove("happy"));
+        face.classList.remove("face-happy-active");
+        eyeContainer.classList.remove("eye-happy-active");
+        photoFace.classList.remove("photo-happy-active");
+        busy = false;
+      }, 6000);
+    };
+
+    // Fast jitter, then freeze the current pose and ease back to rest.
+    const angry = () => {
+      eyes.forEach((eye) => eye.classList.add("angry"));
+      root.style.setProperty("--move-duration", "0.6s");
+
+      setTimeout(() => {
+        const moving = [face, eyeContainer];
+        const poses = moving.map((element) => getComputedStyle(element).transform);
+        moving.forEach((element, index) => {
+          element.style.animation = "none";
+          element.style.transform = poses[index];
+        });
+        face.offsetHeight;
+        eyes.forEach((eye) => eye.classList.remove("angry"));
+        moving.forEach((element) => (element.style.transition = "transform 0.6s ease-in-out"));
+        face.style.transform = "translateX(calc(-50% - 10px))";
+        eyeContainer.style.transform = "translateX(-12px)";
+
+        setTimeout(() => {
+          root.style.removeProperty("--move-duration");
+          moving.forEach((element) => {
+            element.style.transition = "";
+            element.style.animation = "";
+            element.style.transform = "";
+          });
+          busy = false;
+        }, 600);
+      }, 2000);
+    };
+
+    const trigger = () => {
+      if (busy) return;
+      busy = true;
+      // Bias against repeats so reactions feel varied while staying ~50/50 overall.
+      const threshold = lastWasHappy === null ? 0.5 : lastWasHappy ? 0.7 : 0.3;
+      lastWasHappy = Math.random() > threshold;
+      if (lastWasHappy) happy();
+      else angry();
+    };
+
+    root.closest("[data-ghost-trigger]")?.addEventListener("click", trigger);
+
+    new IntersectionObserver(([entry]) => root.classList.toggle("ghost-paused", !entry.isIntersecting)).observe(root);
+  }
+</script>

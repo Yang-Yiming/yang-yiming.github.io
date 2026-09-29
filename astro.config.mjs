@@ -8,7 +8,7 @@ import rehypeKatex from "rehype-katex";
 export default defineConfig({
   site: "https://yang-yiming.github.io",
   output: "static",
-  build: { format: "directory" },
+  trailingSlash: "ignore",
   integrations: [sitemap()],
   markdown: {
     processor: unified({

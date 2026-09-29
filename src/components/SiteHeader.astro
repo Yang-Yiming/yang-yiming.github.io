@@ -1,34 +1,72 @@
 ---
-import { sectionNavigation } from "../content";
-import { siteMeta } from "../content/siteMeta";
+import ThemeToggle from "./ThemeToggle.astro";
+import { site } from "../content/site";
+import { getSections } from "../lib/content";
 
 interface Props {
   activeSection?: string;
-  isHome?: boolean;
+  spy?: boolean;
 }
 
-const { activeSection = "home", isHome = false } = Astro.props;
+const { activeSection = "home", spy = false } = Astro.props;
+const sections = await getSections();
 ---
-<header class:list={["site-header", isHome && "site-header--home"]}>
+<header class="site-header">
   <div class="site-header__inner">
     <a class="site-mark" href="/">
-      <span class="site-mark__name">{siteMeta.name}</span>
-      <span class="site-mark__role">{siteMeta.role}</span>
+      <span class="site-mark__name">{site.name}</span>
+      <span class="site-mark__role">{site.role}</span>
     </a>
     <div class="site-header__controls">
-      <nav aria-label="Section navigation" class="site-nav" data-spy={isHome ? "" : undefined}>
-        {sectionNavigation.map(([id, navLabel]) => (
+      <nav aria-label="Sections" class="site-nav" data-spy={spy ? "" : undefined}>
+        {sections.map(({ id, data }) => (
           <a
             class:list={["site-nav__link", id === activeSection && "is-active"]}
             href={id === "home" ? "/" : `/#${id}`}
             data-section={id}
             aria-current={id === activeSection ? "true" : undefined}
           >
-            {navLabel}
+            {data.nav}
           </a>
         ))}
       </nav>
-      <button class="theme-toggle__button" type="button" data-theme-toggle aria-label="Toggle color theme">◐</button>
+      <ThemeToggle />
     </div>
   </div>
 </header>
+
+<script>
+  // Highlights the nav link for the last section whose top passed the upper third of the viewport.
+  const nav = document.querySelector<HTMLElement>("[data-spy]");
+  if (nav) {
+    const links = [...nav.querySelectorAll<HTMLAnchorElement>("[data-section]")];
+    const targets = links
+      .map((link) => document.getElementById(link.dataset.section!))
+      .filter((target): target is HTMLElement => target !== null);
+    const visible = new Set<Element>();
+
+    const update = () => {
+      const atBottom = innerHeight + scrollY >= document.documentElement.scrollHeight - 2;
+      const current = atBottom ? targets.at(-1) : targets.findLast((target) => visible.has(target)) ?? targets[0];
+      for (const link of links) {
+        const active = link.dataset.section === current?.id;
+        link.classList.toggle("is-active", active);
+        link.toggleAttribute("aria-current", active);
+      }
+    };
+
+    // Treat a section as "reached" once its top crosses 33% of the viewport.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting || entry.boundingClientRect.top < 0) visible.add(entry.target);
+          else visible.delete(entry.target);
+        }
+        update();
+      },
+      { rootMargin: "0px 0px -67% 0px" },
+    );
+    targets.forEach((target) => observer.observe(target));
+    addEventListener("scroll", update, { passive: true });
+  }
+</script>

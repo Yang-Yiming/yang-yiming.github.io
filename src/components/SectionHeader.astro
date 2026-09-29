@@ -1,0 +1,22 @@
+---
+import type { Section } from "../lib/content";
+
+interface Props {
+  section: Section;
+}
+
+const { section } = Astro.props;
+---
+<div class="section-header">
+  <div class="section-heading">
+    <p class="section-kicker">{section.kicker}</p>
+    <a class="section-heading-link" href={`#${section.id}`} aria-label={`Link to ${section.data.nav} section`}>
+      <span aria-hidden="true" class="section-heading-link__anchor">#</span>
+      <h2 class="section-title">{section.data.title}</h2>
+    </a>
+  </div>
+  <div class="section-body">
+    {section.data.source && <p class="section-source-label">{section.data.source}</p>}
+    <div class="section-intro prose-inline" set:html={section.rendered?.html} />
+  </div>
+</div>

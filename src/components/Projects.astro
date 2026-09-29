@@ -1,17 +1,29 @@
 ---
-import type { SectionContent } from "../types";
-import { renderInlineMarkdown, renderMarkdown } from "../lib/astroMarkdown";
-import { getRepoLabel } from "../lib/github";
+import { getCollection } from "astro:content";
+import SectionHeader from "./SectionHeader.astro";
+import ProjectCard from "./ProjectCard.astro";
+import type { Section } from "../lib/content";
 
-interface Props { section: SectionContent }
+interface Props {
+  section: Section;
+}
+
 const { section } = Astro.props;
-const languageColors: Record<string, string> = { Swift: "#ffac45", Rust: "#dea584", JavaScript: "#f1e05a", Python: "#3572A5" };
+const projects = (await getCollection("projects")).sort((a, b) => a.data.order - b.data.order);
+const groups = section.data.groups
+  .map((group) => ({ ...group, items: projects.filter((project) => project.data.group === group.id) }))
+  .filter((group) => group.items.length > 0);
 ---
 <section class="editorial-section section-frame" id={section.id}>
-  <div class="section-header"><div class="section-heading"><p class="section-kicker" data-section-anchor={section.id}>{section.kicker}</p><a class="section-heading-link" href={`#${section.id}`}><span aria-hidden="true" class="section-heading-link__anchor">#</span><h2 class="section-title" set:html={renderInlineMarkdown(section.title)} /></a></div><div class="section-body"><p class="section-source-label">{section.sourceLabel}</p><div class="section-intro" set:html={renderMarkdown(section.intro)} /></div></div>
+  <SectionHeader section={section} />
   <div class="projects-groups">
-    {section.projectGroups?.map((group) => <div class="projects-group"><div class="projects-group__header"><p class="projects-group__title">{group.title}</p></div><div class="projects-group__list">
-      {group.items.map((project) => <a class="project-card" href={project.href} target="_blank" rel="noreferrer"><div class="project-card__header"><div class="project-card__heading"><span class="project-card__icon" aria-hidden="true">↗</span><h3 class="project-card__title">{getRepoLabel(project.href)}</h3></div>{project.visibility && <span class="project-card__badge">{project.visibility}</span>}</div><div class="project-card__body"><div class="project-card__description" set:html={renderMarkdown(project.description)} /></div><div class="project-card__footer"><div class="project-card__meta">{project.language && <span class="project-card__meta-item"><span class="project-card__language-dot" style={`background:${languageColors[project.language] || "var(--accent)"}`} />{project.language}</span>}{project.stars && <span class="project-card__meta-item">★ {project.stars}</span>}</div><div class="project-card__meta project-card__meta--secondary"><span class="project-card__meta-item">Updated {project.year}</span></div></div></a>)}
-    </div></div>)}
+    {groups.map((group) => (
+      <div class="projects-group">
+        <p class="projects-group__title">{group.title}</p>
+        <div class="projects-group__list">
+          {group.items.map((project) => <ProjectCard project={project} />)}
+        </div>
+      </div>
+    ))}
   </div>
 </section>

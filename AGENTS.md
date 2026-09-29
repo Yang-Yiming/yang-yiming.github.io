@@ -1,17 +1,27 @@
 # Repository Guidelines
 
 ## Structure
-- `src/App.tsx`: page structure, section composition, and landing reveal
-- `src/components/Landing.tsx`: full-screen landing intro
-- `src/content/`: editable content and image references (`index.ts`, `siteMeta.ts`, `sections.ts`, `entries.ts`, `projects.ts`)
-- `src/styles.css` + `src/styles/`: visual system, spacing, typography, layout, and landing effect
-- `src/types.ts`: shared types
-- `public/assets/`: static images
+- `src/content/`: all editable content, written as Markdown
+  - `site.ts`: name, summary, tagline, links, quick links
+  - `sections/*.md`: home-page sections (`order`, `nav`, `title`, intro body; `draft: true` hides one)
+  - `projects/*.md`: one file per GitHub repo (`repo`, `group`, `order`); stars/language are fetched at build time
+  - `life/`, `blog/`: entries (`title`, `summary`, `date`, optional `label`, `embed`, `external`, `draft`); put images next to the post
+- `src/content.config.ts`: collection schemas
+- `src/lib/`: content helpers and GitHub stats
+- `src/components/`: Astro components (`Hero`, `Ghost`, `Section`, `Projects`, `ProjectCard`, `ListRow`, `SiteHeader`, `ThemeToggle`)
+- `src/layouts/BaseLayout.astro`: `<head>`, header, page shell
+- `src/pages/`: home, entry pages, `404`, `rss.xml`
+- `src/styles/`: `tokens.css` (colors via `light-dark()`, type/spacing scale), `prose.css` (article bodies), one file per area
+- `src/assets/ghost/`: photos the ghost can show
+- `public/`: files served as-is (embedded charts, PDFs)
 
-Keep content in `src/content/`, not scattered through components. Keep visual changes in `src/styles.css` and `src/styles/` unless structure must change.
+Keep content in `src/content/`, not in components. Keep visual changes in `src/styles/` unless structure must change.
 
 ## Workflow
 Use `bun` for all local work in this repository. Do not switch package managers.
+
+- `bun run dev`: local server
+- `bun run build`: `astro check` + static build to `dist/`
 
 ## Clarification
 For any feature work, continue asking clarifying questions until the goal, scope, constraints, and acceptance criteria are fully explicit. Do not proceed on unresolved assumptions.
@@ -30,7 +40,7 @@ This site should stay within an editorial minimal language:
 Avoid generic SaaS cards, loud gradients, crowded UI, or decorative effects that break the restraint.
 
 ## Style
-Use TypeScript, React function components, and 2-space indentation.
+Use TypeScript, Astro components, and 2-space indentation (including CSS).
 
 - components/types: `PascalCase`
 - variables/functions: `camelCase`

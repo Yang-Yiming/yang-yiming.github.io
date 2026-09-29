@@ -1,126 +1,132 @@
 .hero {
-    min-height: calc(100svh - var(--nav-height));
-    padding: clamp(3.5rem, 10vh, 7rem) 0 2.5rem;
-    display: grid;
-    align-content: space-between;
-    gap: clamp(3rem, 8vh, 5.5rem);
-    border-top: 0;
+  display: grid;
+  align-content: space-between;
+  gap: clamp(3rem, 8vh, 5.5rem);
+  min-height: calc(100svh - var(--nav-height));
+  padding: clamp(3.5rem, 10vh, 7rem) 0 2.5rem;
+}
+
+.hero__masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  align-items: start;
+  gap: clamp(1.4rem, 3vw, 2.6rem);
 }
 
 .hero__lead {
-    display: grid;
-    gap: 1.4rem;
-    justify-items: start;
+  display: grid;
+  justify-items: start;
+  gap: 1.4rem;
 }
 
 .hero__title {
-    max-width: 14ch;
-    font-size: clamp(3.3rem, 8vw, 6.8rem);
-    line-height: 0.94;
-    text-wrap: balance;
+  max-width: 14ch;
+  font-size: clamp(3.3rem, 8vw, 6.8rem);
+  line-height: 0.94;
 }
 
 .hero__summary {
-    max-width: 58ch;
+  max-width: 58ch;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--text-base);
+  line-height: 1.75;
 }
 
-.hero__availability {
-    padding-top: 0.2rem;
-    color: var(--accent);
-    font-family: "Source Serif 4", Georgia, serif;
-    font-size: 1.05rem;
-    font-style: italic;
-    letter-spacing: 0;
-    text-transform: none;
+.hero__tagline {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--font-serif-stack);
+  font-size: var(--text-md);
+  font-style: italic;
 }
 
 .hero__columns {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr 0.8fr;
-    gap: 2.5rem;
-    padding: 1.4rem 0 0;
-    border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.8fr;
+  gap: 2.5rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
 }
 
 .hero__column {
-    display: grid;
-    align-content: start;
-    gap: 0.8rem;
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
 }
 
 .hero__body {
-    font-size: 0.9rem;
-    line-height: 1.7;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.7;
 }
 
 .hero__body p {
-    margin-bottom: 0.45rem;
+  margin-bottom: 0.45rem;
 }
 
-.hero__index,
-.hero__links {
-    display: grid;
+.hero__index {
+  display: grid;
 }
 
-.hero__index-link,
-.hero__link {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.75rem 0;
-    border-top: 1px solid var(--line);
-    font-size: 0.9rem;
-    transition:
-        color var(--transition),
-        padding-left var(--transition);
+.hero__index-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+  transition:
+    color var(--transition),
+    padding-left var(--transition);
 }
 
-.hero__index-link > span:last-child {
-    color: var(--text-muted);
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.hero__index-link:hover,
-.hero__link:hover,
-.hero__index-link:focus-visible,
-.hero__link:focus-visible {
-    color: var(--accent);
-    padding-left: 0.35rem;
+.hero__index-kicker {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .hero__index-arrow {
-    color: var(--text-muted);
-    transition: color var(--transition);
+  color: var(--text-muted);
+  transition: color var(--transition);
+}
+
+.hero__index-link:hover,
+.hero__index-link:focus-visible {
+  padding-left: 0.35rem;
+  color: var(--accent);
 }
 
 .hero__index-link:hover .hero__index-arrow,
-.hero__index-link:focus-visible .hero__index-arrow,
-.hero__link:hover .hero__index-arrow,
-.hero__link:focus-visible .hero__index-arrow {
-    color: var(--accent);
+.hero__index-link:focus-visible .hero__index-arrow {
+  color: var(--accent);
 }
 
 @media (max-width: 900px) {
-    .hero {
-        min-height: auto;
-    }
+  .hero {
+    min-height: auto;
+  }
 
-    .hero__columns {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
+  .hero__masthead,
+  .hero__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero__columns {
+    gap: 2rem;
+  }
 }
 
 @media (max-width: 640px) {
-    .hero {
-        padding-top: 2.5rem;
-    }
+  .hero {
+    padding-top: 2.5rem;
+  }
 
-    .hero__title {
-        max-width: 100%;
-        font-size: clamp(2.8rem, 14vw, 4.6rem);
-    }
+  .hero__title {
+    max-width: 100%;
+    font-size: clamp(2.8rem, 14vw, 4.6rem);
+  }
 }

@@ -1,9 +1,7 @@
 ---
 title: Process of Survival Analysis
 summary: "STA323 course project 1, an example of survival analysis using PySpark."
-meta: April 2026
 date: 2026-04-18
-kicker: Blog / 01
 ---
 
 This analysis aims to characterize customer churn behavior in IBM's Telco dataset using survival analysis methods, with _tenure_ (months of subscription) as the time-to-event variable and _churn_ as the event of interest.
@@ -17,18 +15,18 @@ The raw dataset is first loaded as a bronze table. We applied two transformation
 Applying the Kaplan-Meier estimator with _tenure_ as the time variable and _churn_ as the event indicator to estimate the population-level survival function. The result is shown in [Figure 1](#fig:q2plots): the median survival time is 34.0 months, meaning approximately half of the customers in this cohort churn within the first 34 months of subscription.
 
 <figure id="fig:q2plots">
-  <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; align-items:start;">
-    <figure style="margin:0;">
-      <img src="./assets/Kaplan-Meier.jpg" alt="Result of Kaplan-Meier fit" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(a) Result of Kaplan-Meier fit.</figcaption>
+  <div class="figure-grid" style="--cols: 3">
+    <figure>
+      <img src="./assets/Kaplan-Meier.jpg" alt="Result of Kaplan-Meier fit" loading="lazy" />
+      <figcaption>(a) Result of Kaplan-Meier fit.</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/KM-gender.jpg" alt="KM fit on Gender" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(b) KM fit on Gender</figcaption>
+    <figure>
+      <img src="./assets/KM-gender.jpg" alt="KM fit on Gender" loading="lazy" />
+      <figcaption>(b) KM fit on Gender</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/KM-paymentmethod.jpg" alt="KM fit on Payment Methods" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(c) KM fit on Payment Methods</figcaption>
+    <figure>
+      <img src="./assets/KM-paymentmethod.jpg" alt="KM fit on Payment Methods" loading="lazy" />
+      <figcaption>(c) KM fit on Payment Methods</figcaption>
     </figure>
   </div>
 </figure>
@@ -52,39 +50,39 @@ We fit a Cox Proportional Hazards model using four covariates identified in the 
 Taken together, the three checks consistently indicate that the proportional hazards assumption is violated for most covariates. This means the Cox PH model's hazard ratios should be interpreted with caution, as the effect of these variables on churn risk is not constant over the customer lifetime.
 
 <figure id="fig:cox-schoenfeld">
-  <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:1rem; align-items:start;">
-    <figure style="margin:0;">
-      <img src="./assets/q2schoenfeld_1.jpg" alt="Plots for dependents" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(a) Plots for _dependents_</figcaption>
+  <div class="figure-grid" style="--cols: 2">
+    <figure>
+      <img src="./assets/q2schoenfeld_1.jpg" alt="Plots for dependents" loading="lazy" />
+      <figcaption>(a) Plots for _dependents_</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/q2schoenfeld_2.jpg" alt="Plots for InternetService" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(b) Plots for _InternetService_</figcaption>
+    <figure>
+      <img src="./assets/q2schoenfeld_2.jpg" alt="Plots for InternetService" loading="lazy" />
+      <figcaption>(b) Plots for _InternetService_</figcaption>
     </figure>
   </div>
-  <figcaption style="text-align:center;">Schoenfeld Residuals plots.</figcaption>
+  <figcaption>Schoenfeld Residuals plots.</figcaption>
 </figure>
 
 <figure id="fig:q2loglog">
-  <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:1rem; align-items:start;">
-    <figure style="margin:0;">
-      <img src="./assets/q2loglogkm1.jpg" alt="online backup" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(a) online backup</figcaption>
+  <div class="figure-grid" style="--cols: 4">
+    <figure>
+      <img src="./assets/q2loglogkm1.jpg" alt="online backup" loading="lazy" />
+      <figcaption>(a) online backup</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/q2loglogkm2.jpg" alt="dependents" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(b) dependents</figcaption>
+    <figure>
+      <img src="./assets/q2loglogkm2.jpg" alt="dependents" loading="lazy" />
+      <figcaption>(b) dependents</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/q2loglogkm3.jpg" alt="internet service" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(c) internet service</figcaption>
+    <figure>
+      <img src="./assets/q2loglogkm3.jpg" alt="internet service" loading="lazy" />
+      <figcaption>(c) internet service</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/q2loglogkm4.jpg" alt="tech support" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(d) tech support</figcaption>
+    <figure>
+      <img src="./assets/q2loglogkm4.jpg" alt="tech support" loading="lazy" />
+      <figcaption>(d) tech support</figcaption>
     </figure>
   </div>
-  <figcaption style="text-align:center;">Log-log Kaplan-Meier plots</figcaption>
+  <figcaption>Log-log Kaplan-Meier plots</figcaption>
 </figure>
 
 ## Accelerated Failure Time
@@ -96,21 +94,21 @@ We fit a Log-Logistic AFT model to the data. The median survival time is estimat
 To assess whether the log-logistic distribution is an appropriate choice, we examine log-log plots of the survival function. As shown in [Figure 4](#fig:loglogAFT), most curves are approximately straight, supporting the distributional assumption. However, the curves are largely non-parallel across groups, which violates the AFT model's core assumption of a constant multiplicative effect. This suggests that while the log-logistic distribution fits the marginal survival reasonably well, the AFT model is not fully appropriate for this dataset.
 
 <figure id="fig:loglogAFT">
-  <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; align-items:start;">
-    <figure style="margin:0;">
-      <img src="./assets/q2loglogpartner.jpg" alt="partner" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(a) partner</figcaption>
+  <div class="figure-grid" style="--cols: 3">
+    <figure>
+      <img src="./assets/q2loglogpartner.jpg" alt="partner" loading="lazy" />
+      <figcaption>(a) partner</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/q2loglogmultiplelines.jpg" alt="multiple lines" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(b) multiple lines</figcaption>
+    <figure>
+      <img src="./assets/q2loglogmultiplelines.jpg" alt="multiple lines" loading="lazy" />
+      <figcaption>(b) multiple lines</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/q2logloginternetservice.jpg" alt="internet service" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(c) internet service</figcaption>
+    <figure>
+      <img src="./assets/q2logloginternetservice.jpg" alt="internet service" loading="lazy" />
+      <figcaption>(c) internet service</figcaption>
     </figure>
   </div>
-  <figcaption style="text-align:center;">A selection of the log-log plots for AFT model</figcaption>
+  <figcaption>A selection of the log-log plots for AFT model</figcaption>
 </figure>
 
 ## Customer Lifetime Value
@@ -124,15 +122,15 @@ The cumulative NPV chart ([Figure 5](#fig:customerlifetimevalue)) translates thi
 Overall, this analysis demonstrates that survival analysis provides a principled framework for understanding churn dynamics and informing retention decisions. The KM and log-rank tests effectively identified influential variables; however, both the Cox PH and AFT models showed assumption violations on this dataset, suggesting that more flexible approaches (such as time-varying Cox models or machine learning-based survival models) may yield more reliable estimates in future work.
 
 <figure id="fig:customerlifetimevalue">
-  <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:1rem; align-items:start;">
-    <figure style="margin:0;">
-      <img src="./assets/survivalprobabilitycurve.jpg" alt="Survival Probability Curve Chart" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(a) Survival Probability Curve Chart</figcaption>
+  <div class="figure-grid" style="--cols: 2">
+    <figure>
+      <img src="./assets/survivalprobabilitycurve.jpg" alt="Survival Probability Curve Chart" loading="lazy" />
+      <figcaption>(a) Survival Probability Curve Chart</figcaption>
     </figure>
-    <figure style="margin:0;">
-      <img src="./assets/cumulativenpv.jpg" alt="Cumulative NPV chart" style="width:100%; height:auto; display:block;" />
-      <figcaption style="text-align:center;">(b) Cumulative NPV chart</figcaption>
+    <figure>
+      <img src="./assets/cumulativenpv.jpg" alt="Cumulative NPV chart" loading="lazy" />
+      <figcaption>(b) Cumulative NPV chart</figcaption>
     </figure>
   </div>
-  <figcaption style="text-align:center;">Customer Lifetime Value Charts</figcaption>
+  <figcaption>Customer Lifetime Value Charts</figcaption>
 </figure>

@@ -1,0 +1,50 @@
+/* Every color is light-dark(light, dark); data-theme pins one side. */
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#f7f8fa, #0f1217);
+  --bg-strong: light-dark(#eef1f5, #161b22);
+  --header-bg: light-dark(rgb(247 248 250 / 0.82), rgb(15 18 23 / 0.78));
+  --text: light-dark(#171b22, #e6ebf2);
+  --text-soft: light-dark(#4a5568, #b1bac6);
+  --text-muted: light-dark(#6b7280, #8a94a3);
+  --line: light-dark(rgb(23 27 34 / 0.14), rgb(230 235 242 / 0.12));
+  --line-strong: light-dark(rgb(23 27 34 / 0.24), rgb(230 235 242 / 0.24));
+  --accent: light-dark(#3f6288, #7ea3c6);
+  --accent-soft: light-dark(rgb(63 98 136 / 0.12), rgb(126 163 198 / 0.16));
+
+  --font-mono-stack: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+  --font-serif-stack: "Source Serif 4 Variable", Georgia, serif;
+
+  --text-xs: 0.72rem;
+  --text-sm: 0.84rem;
+  --text-base: 0.94rem;
+  --text-md: 1.06rem;
+
+  --max-width: 1200px;
+  --prose-width: 68ch;
+  --nav-height: 72px;
+  --gutter: clamp(1.1rem, 3vw, 2.4rem);
+  --section-gap: clamp(4rem, 8vw, 9rem);
+  --transition: 180ms ease;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --nav-height: 92px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --section-gap: 3.5rem;
+  }
+}

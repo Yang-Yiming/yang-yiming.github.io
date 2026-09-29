@@ -1,44 +1,33 @@
 ---
 import { render } from "astro:content";
-import Layout from "../../layouts/Layout.astro";
-import SiteHeader from "../../components/SiteHeader.astro";
-import { getAllEntries, getEntry } from "../../content/entries";
-import type { EntryCollectionId } from "../../types";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { capitalize, entryCollections, formatMonth, getEntries, type Entry } from "../../lib/content";
 
 export async function getStaticPaths() {
-  const entries = await getAllEntries();
-  return entries.map((entry) => ({
-    params: { collection: entry.collectionId, slug: entry.slug },
-  }));
+  const entries = (await Promise.all(entryCollections.map(getEntries))).flat();
+  return entries
+    .filter((entry) => !entry.data.external)
+    .map((entry) => ({ params: { collection: entry.collection, slug: entry.id }, props: { entry } }));
 }
 
-const collection = Astro.params.collection as EntryCollectionId;
-const slug = Astro.params.slug ?? "";
-const entry = await getEntry(collection, slug);
-
-if (!entry) {
-  throw new Error(`Entry not found: ${collection}/${slug}`);
+interface Props {
+  entry: Entry;
 }
 
-const { Content } = await render(entry.sourceEntry as Parameters<typeof render>[0]);
-const collectionLabel = collection.charAt(0).toUpperCase() + collection.slice(1);
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const { title, summary, date, label, embed } = entry.data;
 ---
-<Layout title={`${entry.title} · Yang Yiming`} description={entry.summary}>
-  <div class="page-shell">
-    <SiteHeader activeSection={entry.collectionId} />
-    <main class="page-main">
-      <article class="entry-page">
-        <div class="entry-page__header">
-          <a class="entry-page__backlink" href={`/#${entry.collectionId}`}>← <span>Back to {collectionLabel}</span></a>
-          <p class="section-kicker">{entry.kicker ?? entry.meta}</p>
-          <h1 class="entry-page__title">{entry.title}</h1>
-          <p class="entry-page__meta">{entry.meta}</p>
-          <p class="entry-page__summary">{entry.summary}</p>
-        </div>
-        {entry.kind === "markdown" ? <div class="entry-page__content"><Content /></div> : null}
-        {entry.open === "iframe" && entry.externalHref ? <iframe class="entry-page__frame" src={entry.externalHref} title={entry.title} /> : null}
-        {(entry.open === "native" || entry.kind === "link") && entry.externalHref ? <p><a href={entry.externalHref}>Open {entry.title}</a></p> : null}
-      </article>
-    </main>
-  </div>
-</Layout>
+<BaseLayout title={title} description={summary} activeSection={entry.collection}>
+  <article class="entry-page">
+    <header class="entry-page__header">
+      <a class="entry-page__backlink" href={`/#${entry.collection}`}>← Back to {capitalize(entry.collection)}</a>
+      <p class="section-kicker">{capitalize(entry.collection)}{label && ` · ${label}`}</p>
+      <h1 class="entry-page__title">{title}</h1>
+      <time class="entry-page__meta" datetime={date.toISOString()}>{formatMonth(date)}</time>
+      <p class="entry-page__summary">{summary}</p>
+    </header>
+    <div class="prose"><Content /></div>
+    {embed && <iframe class="entry-page__frame" src={embed} title={title} loading="lazy" />}
+  </article>
+</BaseLayout>

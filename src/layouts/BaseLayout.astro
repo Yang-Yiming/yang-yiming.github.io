@@ -1,0 +1,43 @@
+---
+import "../styles/index.css";
+import SiteHeader from "../components/SiteHeader.astro";
+import { site } from "../content/site";
+
+interface Props {
+  title?: string;
+  description?: string;
+  activeSection?: string;
+  spy?: boolean;
+}
+
+const { title, description = site.description, activeSection, spy = false } = Astro.props;
+const pageTitle = title ? `${title} · ${site.name}` : site.name;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title={site.name} href="/rss.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <script is:inline>
+      // Runs before first paint so a saved theme never flashes.
+      const savedTheme = localStorage.getItem("theme-mode");
+      if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+    </script>
+  </head>
+  <body>
+    <SiteHeader activeSection={activeSection} spy={spy} />
+    <main class="page-main">
+      <slot />
+    </main>
+  </body>
+</html>

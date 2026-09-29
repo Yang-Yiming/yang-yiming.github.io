@@ -1,0 +1,19 @@
+<button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme">◐</button>
+
+<script>
+  const root = document.documentElement;
+  const darkQuery = matchMedia("(prefers-color-scheme: dark)");
+  const button = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  const resolvedTheme = () => root.dataset.theme ?? (darkQuery.matches ? "dark" : "light");
+  const syncLabel = () =>
+    button?.setAttribute("aria-label", `Switch to ${resolvedTheme() === "dark" ? "light" : "dark"} theme`);
+
+  button?.addEventListener("click", () => {
+    const next = resolvedTheme() === "dark" ? "light" : "dark";
+    root.dataset.theme = next;
+    localStorage.setItem("theme-mode", next);
+    syncLabel();
+  });
+  darkQuery.addEventListener("change", syncLabel);
+  syncLabel();
+</script>

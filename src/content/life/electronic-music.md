@@ -1,9 +1,8 @@
 ---
 title: Electronic Music
 summary: A place for bass-heavy records, club textures, listening notes, and artists I keep replaying.
-meta: Listening Archive
 date: 2026-04-05
-kicker: Life / 02
+label: Listening Archive
 ---
 
 # My Music Life

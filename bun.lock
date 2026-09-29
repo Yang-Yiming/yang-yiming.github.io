@@ -8,14 +8,13 @@
         "@astrojs/markdown-remark": "7.3.1",
         "@astrojs/rss": "4.0.19",
         "@astrojs/sitemap": "3.7.4",
+        "@fontsource-variable/geist-mono": "5.3.0",
+        "@fontsource-variable/source-serif-4": "5.3.0",
         "astro": "7.3.5",
         "katex": "^0.16.45",
         "rehype-katex": "^7.0.1",
-        "rehype-stringify": "^10.0.1",
         "remark-breaks": "^4.0.0",
         "remark-math": "^6.0.0",
-        "remark-parse": "^11.0.0",
-        "remark-rehype": "^11.1.2",
       },
       "devDependencies": {
         "@astrojs/check": "0.9.10",
@@ -173,6 +172,10 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.28.2", "", { "os": "win32", "cpu": "ia32" }, "sha512-YmJbfTlvU7Sdn9BB+4PRES4oB6pxgS37MAONj+hBr/cpXS1aBPKXxNnDbu+QCWPj0o9dgyxeq79g6c5P8KeuYA=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.2", "", { "os": "win32", "cpu": "x64" }, "sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g=="],
+
+    "@fontsource-variable/geist-mono": ["@fontsource-variable/geist-mono@5.3.0", "", {}, "sha512-vBbuwDEo9AkrqADMXOrlAR3DFcJi4/JxeuU43FoiQERnNwsfXNnvxvReZG02cQKmyk4DZkZdBZX3oTDvy2zBAw=="],
+
+    "@fontsource-variable/source-serif-4": ["@fontsource-variable/source-serif-4@5.3.0", "", {}, "sha512-9vch9WqxjaaA+1o9Ur8pOgIGbCYLjRReOUel23A6lOpD1syptgjtkORevvNmldJ5kGXQL29onQUqI5Ltz0s3bQ=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 
