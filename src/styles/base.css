@@ -9,8 +9,14 @@
 }
 
 html {
-  scroll-behavior: smooth;
   scroll-padding-top: calc(var(--nav-height) + 1.75rem);
+}
+
+/* Smooth-scroll only for in-page anchor clicks (the clicked link holds focus).
+   On a fresh page load to /#section nothing is focused, so the jump is instant
+   instead of animating down from the top. */
+html:focus-within {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -46,7 +52,8 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
+  html,
+  html:focus-within {
     scroll-behavior: auto;
   }
 
