@@ -5,7 +5,7 @@ date: 2026-04-06
 label: Ongoing Practice
 ---
 
-I am a member of the NOVA Street Dance Club at SUSTech, where I mainly dance [Locking](https://en.wikipedia.org/wiki/Locking_(dance)) and [House](https://en.wikipedia.org/wiki/House_dance). I’m especially into old-school elements like _freestyle_, _battles_, and _cyphers_, because they let dancers express their own understanding of the music.
+I am a member of the NOVA Street Dance Club at SUSTech, where I mainly dance [Locking](https://en.wikipedia.org/wiki/Locking_(dance)) and [House](https://en.wikipedia.org/wiki/House_dance). I’ve also spent time on the organizational side: my roles in the club have included Locking lead, House lead, Vice President, and DJ. I’m especially into old-school elements like _freestyle_, _battles_, and _cyphers_, because they let dancers express their own understanding of the music.
 
 I’m not very good at choreography-based urban dance as I’m doing bad at memorizing moves :(
 

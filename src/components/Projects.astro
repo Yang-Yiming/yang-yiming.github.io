@@ -15,7 +15,10 @@ const groups = PROJECT_GROUPS.map((group) => ({
   <div class="projects-groups">
     {groups.map((group) => (
       <div class="projects-group">
-        <p class="projects-group__title">{group.title}</p>
+        <div class="projects-group__header">
+          <p class="projects-group__title">{group.title}</p>
+          {"blurb" in group && <p class="projects-group__blurb">{group.blurb}</p>}
+        </div>
         <div class="projects-group__list">
           {group.items.map((project) => <ProjectCard project={project} />)}
         </div>

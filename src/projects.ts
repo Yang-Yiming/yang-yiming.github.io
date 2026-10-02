@@ -10,7 +10,12 @@ export interface Project {
 
 export const PROJECT_GROUPS = [
   { id: "contributor", title: "Me as a contributor" },
-  { id: "maintainer", title: "Me as a maintainer" },
+  {
+    id: "maintainer",
+    title: "Me as a maintainer",
+    blurb:
+      "I also enjoy vibe-coding small tools that serve my own needs, and the needs of my club and other student organizations.",
+  },
 ] as const;
 
 export const PROJECTS: Project[] = [
@@ -24,33 +29,32 @@ export const PROJECTS: Project[] = [
     ],
   },
   {
-    repo: "Yang-Yiming/cc-router-lite",
+    repo: "Yang-Yiming/tabstart",
     group: "maintainer",
-    language: "Rust",
+    language: "TypeScript",
     description: [
-      "A lightweight Claude Code / Codex backend switcher that works by automatically editing config files.",
-      "Includes a CLI and a polished Ratatui TUI.",
+      "A plugin-based browser start page I use as my new tab.",
+      "Every widget — bookmarks, notes, kanban, pomodoro — is a plugin.",
     ],
   },
   {
-    repo: "Yang-Yiming/AppTossLite",
+    repo: "Yang-Yiming/TSokoban",
     group: "maintainer",
-    language: "Rust",
+    language: "TypeScript",
     description: [
-      "Manage Xcode projects and IPAs, and build/deploy them to an iPhone with a single command.",
-      "Supports both a CLI and a Ratatui TUI.",
+      "A TypeScript rebuild of my CS109 Java Sokoban project, plus some more gaming features.",
     ],
   },
   {
-    repo: "Yang-Yiming/Zhicheng-Warehouse-Manager",
+    repo: "Yang-Yiming/backend-processes",
     group: "maintainer",
-    language: "JavaScript",
-    description: ["A WeChat Mini Program for SUSTech Zhicheng College to manage warehouse inventory."],
+    language: "TypeScript",
+    description: ["An Obsidian plugin for launching and managing local shell processes from a tab."],
   },
   {
-    repo: "Yang-Yiming/kimi-learn",
+    repo: "Yang-Yiming/NOVA-ledger",
     group: "maintainer",
-    language: "Python",
-    description: ["Skills and a web app based on Wire API and Kimi CLI for my family to study."],
+    language: "TypeScript",
+    description: ["The ledger for NOVA, the street dance club I'm in: entries, summaries, and xlsx export."],
   },
 ];
