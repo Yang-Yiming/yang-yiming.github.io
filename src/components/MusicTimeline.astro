@@ -1,22 +1,30 @@
 ---
-import { ERAS, GENRES } from "../data/music";
+import { ARTISTS, ERAS, GENRES } from "../data/music";
+
+// A genre never fully disappears once found: later 0s are drawn as this thin thread.
+const FLOOR = 0.25;
+const amounts = GENRES.map((g) => {
+  const first = g.amount.findIndex((a) => a > 0);
+  return g.amount.map((a, i) => (first >= 0 && i > first ? Math.max(a, FLOOR) : a));
+});
+const firstEra = GENRES.map((g) => g.amount.findIndex((a) => a > 0));
 
 // Bands are stacked around a center line so the whole thing reads like a waveform.
 const W = 700;
 const H = 220;
 const n = ERAS.length;
 const xs = ERAS.map((_, i) => ((i + 0.5) / n) * W);
-const maxTotal = Math.max(...ERAS.map((_, i) => GENRES.reduce((sum, g) => sum + g.amount[i], 0)));
+const maxTotal = Math.max(...ERAS.map((_, i) => amounts.reduce((sum, a) => sum + a[i], 0)));
 const unit = (H - 16) / maxTotal;
 
 // Top/bottom edge of every band at every era.
 const edges = GENRES.map(() => ERAS.map(() => ({ top: 0, bottom: 0 })));
 ERAS.forEach((_, i) => {
-  const total = GENRES.reduce((sum, g) => sum + g.amount[i], 0) * unit;
+  const total = amounts.reduce((sum, a) => sum + a[i], 0) * unit;
   let y = (H - total) / 2;
-  GENRES.forEach((g, gi) => {
+  GENRES.forEach((_, gi) => {
     const top = y;
-    y += g.amount[i] * unit;
+    y += amounts[gi][i] * unit;
     edges[gi][i] = { top, bottom: y };
   });
 });
@@ -42,6 +50,15 @@ const bandPath = (gi: number) => {
   return `M${top[0][0]},${top[0][1]} ${curve(top)} L${bottom[0][0]},${bottom[0][1]} ${curve(bottom)} Z`;
 };
 
+// Splits "text [label](url) text" into plain and link parts.
+const storyParts = (story: string) =>
+  story.split(/(\[[^\]]+\]\([^)]+\))/).map((part) => {
+    const m = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    return m ? { text: m[1], href: m[2] } : { text: part };
+  });
+
+// The era's biggest genre colors its card.
+const leadColor = (i: number) => GENRES[amounts.reduce((top, a, gi) => (a[i] > amounts[top][i] ? gi : top), 0)].color;
 ---
 <figure class="mt" data-music-timeline style={`--eras: ${n}`}>
   <div class="mt__deck">
@@ -49,7 +66,7 @@ const bandPath = (gi: number) => {
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
         {
           GENRES.map((g, gi) => (
-            <path class="mt__band" d={bandPath(gi)} style={`--band: ${g.color}`} data-genre={g.id} data-amount={g.amount.join(",")} />
+            <path class="mt__band" d={bandPath(gi)} style={`--band: ${g.color}`} data-genre={g.id} data-amount={amounts[gi].join(",")} />
           ))
         }
       </svg>
@@ -89,7 +106,7 @@ const bandPath = (gi: number) => {
     </ul>
   </div>
 
-  <figcaption class="mt__caption">Band height is how much I listened to each genre at the time. It steps through on its own; pick an era to stay there.</figcaption>
+  <figcaption class="mt__caption">These are the genres that changed how I listen, not everything I listen to. Band height is roughly how much of my listening each one took up. It steps through on its own; pick an era to stay there.</figcaption>
 
   <div class="mt__cards" id="mt-cards" aria-live="off">
     {
@@ -97,19 +114,58 @@ const bandPath = (gi: number) => {
         <article
           class:list={["mt__card", { "is-active": i === n - 1 }]}
           data-card={i}
-          style={`--band: ${GENRES.reduce((top, g) => (g.amount[i] > top.amount[i] ? g : top)).color}`}
+          style={`--band: ${leadColor(i)}`}
         >
           <p class="mt__period">{era.period}</p>
           <h3 class="mt__title">{era.title}</h3>
-          <p class="mt__story">{era.story}</p>
+          <ul class="mt__genres" aria-label="Genres found in this era">
+            {GENRES.filter((_, gi) => firstEra[gi] === i).flatMap((g) =>
+              g.wiki.map((w) => (
+                <li style={`--band: ${g.color}`}>
+                  <a href={w.href} target="_blank" rel="noopener noreferrer">
+                    {w.label} <span aria-hidden="true">↗</span>
+                  </a>
+                </li>
+              )),
+            )}
+          </ul>
+          <p class="mt__story">
+            {storyParts(era.story).map((part) =>
+              part.href ? (
+                <a href={part.href} target="_blank" rel="noopener noreferrer">
+                  {part.text}
+                </a>
+              ) : (
+                part.text
+              ),
+            )}
+          </p>
           <p class="mt__feel">“{era.feel}”</p>
           {(era.favorites.length > 0 || era.link) && (
             <div class="mt__meta">
               {era.favorites.length > 0 && (
-                <ul class="mt__favorites" aria-label="Favorites">
-                  {era.favorites.map((name) => (
-                    <li>{name}</li>
-                  ))}
+                <ul class="mt__favorites" aria-label="Favorite artists">
+                  {era.favorites.map((name) => {
+                    const inner = (
+                      <>
+                        <span class="mt__avatar" aria-hidden="true">
+                          {name.charAt(0).toUpperCase()}
+                        </span>
+                        {name}
+                      </>
+                    );
+                    return (
+                      <li>
+                        {ARTISTS[name] ? (
+                          <a class="mt__artist" href={ARTISTS[name]} target="_blank" rel="noopener noreferrer">
+                            {inner}
+                          </a>
+                        ) : (
+                          <span class="mt__artist">{inner}</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               {era.link && (
@@ -459,10 +515,67 @@ const bandPath = (gi: number) => {
 
   .mt .mt__favorites li {
     margin: 0;
-    padding: 0.15rem 0.5rem;
+  }
+
+  .mt .mt__artist {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.2rem 0.65rem 0.2rem 0.2rem;
     border: 1px solid var(--line-strong);
+    border-radius: 999px;
     color: var(--text);
     font-size: var(--text-xs);
+    text-decoration: none;
+    transition: border-color var(--transition), background var(--transition);
+  }
+
+  .mt a.mt__artist:hover {
+    border-color: var(--band);
+    background: var(--accent-soft);
+  }
+
+  .mt__avatar {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--band);
+    color: var(--bg);
+    font-weight: 600;
+  }
+
+  .mt .mt__genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: -0.2rem 0 0.7rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mt .mt__genres li {
+    margin: 0;
+  }
+
+  .mt .mt__genres a {
+    padding: 0.1rem 0.45rem;
+    border-bottom: 2px solid var(--band);
+    color: var(--text-soft);
+    font-size: var(--text-xs);
+    text-decoration: none;
+    transition: color var(--transition), background var(--transition);
+  }
+
+  .mt .mt__genres a:hover {
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+
+  .mt :is(.mt__artist, .mt__genres a, .mt__story a):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   .mt .mt__link {

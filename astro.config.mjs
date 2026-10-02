@@ -10,6 +10,7 @@ export default defineConfig({
   site: "https://yang-yiming.github.io",
   output: "static",
   trailingSlash: "ignore",
+  redirects: { "/life/electronic-music": "/life/music" },
   integrations: [mdx(), sitemap()],
   markdown: {
     processor: unified({
