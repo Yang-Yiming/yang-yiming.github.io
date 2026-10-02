@@ -1,0 +1,503 @@
+---
+import { ERAS, GENRES } from "../data/music";
+
+// Bands are stacked around a center line so the whole thing reads like a waveform.
+const W = 700;
+const H = 220;
+const n = ERAS.length;
+const xs = ERAS.map((_, i) => ((i + 0.5) / n) * W);
+const maxTotal = Math.max(...ERAS.map((_, i) => GENRES.reduce((sum, g) => sum + g.amount[i], 0)));
+const unit = (H - 16) / maxTotal;
+
+// Top/bottom edge of every band at every era.
+const edges = GENRES.map(() => ERAS.map(() => ({ top: 0, bottom: 0 })));
+ERAS.forEach((_, i) => {
+  const total = GENRES.reduce((sum, g) => sum + g.amount[i], 0) * unit;
+  let y = (H - total) / 2;
+  GENRES.forEach((g, gi) => {
+    const top = y;
+    y += g.amount[i] * unit;
+    edges[gi][i] = { top, bottom: y };
+  });
+});
+
+// Horizontal-tangent cubic curves between eras, padded flat to both edges.
+const curve = (pts: [number, number][]) =>
+  pts
+    .slice(1)
+    .map(([x, y], k) => {
+      const [px, py] = pts[k];
+      const mx = (px + x) / 2;
+      return `C${mx},${py} ${mx},${y} ${x},${y}`;
+    })
+    .join(" ");
+
+const bandPath = (gi: number) => {
+  const pad = <T,>(arr: T[]) => [arr[0], ...arr, arr[arr.length - 1]];
+  const px = [0, ...xs, W];
+  const top = pad(edges[gi].map((e) => e.top)).map((y, k) => [px[k], y] as [number, number]);
+  const bottom = pad(edges[gi].map((e) => e.bottom))
+    .map((y, k) => [px[k], y] as [number, number])
+    .reverse();
+  return `M${top[0][0]},${top[0][1]} ${curve(top)} L${bottom[0][0]},${bottom[0][1]} ${curve(bottom)} Z`;
+};
+
+---
+<figure class="mt" data-music-timeline style={`--eras: ${n}`}>
+  <div class="mt__deck">
+    <div class="mt__wave">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+        {
+          GENRES.map((g, gi) => (
+            <path class="mt__band" d={bandPath(gi)} style={`--band: ${g.color}`} data-genre={g.id} data-amount={g.amount.join(",")} />
+          ))
+        }
+      </svg>
+      <div class="mt__playhead" data-playhead style={`left: ${((n - 0.5) / n) * 100}%`}></div>
+    </div>
+
+    <div class="mt__cues" role="group" aria-label="Eras">
+      {
+        ERAS.map((era, i) => (
+          <button
+            class="mt__cue"
+            type="button"
+            data-cue={i}
+            aria-pressed={i === n - 1 ? "true" : "false"}
+            aria-controls="mt-cards"
+            tabindex={i === n - 1 ? 0 : -1}
+            data-live={i === n - 1 ? "" : undefined}
+          >
+            <span class="mt__cue-dot" aria-hidden="true" />
+            <span class="mt__cue-label">{era.period}</span>
+          </button>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="mt__controls">
+    <ul class="mt__legend" aria-label="Genres">
+      {
+        GENRES.map((g) => (
+          <li class="mt__chip" data-genre={g.id} style={`--band: ${g.color}`}>
+            <span class="mt__swatch" aria-hidden="true" />
+            {g.name}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <figcaption class="mt__caption">Band height is how much I listened to each genre at the time. It steps through on its own; pick an era to stay there.</figcaption>
+
+  <div class="mt__cards" id="mt-cards" aria-live="off">
+    {
+      ERAS.map((era, i) => (
+        <article
+          class:list={["mt__card", { "is-active": i === n - 1 }]}
+          data-card={i}
+          style={`--band: ${GENRES.reduce((top, g) => (g.amount[i] > top.amount[i] ? g : top)).color}`}
+        >
+          <p class="mt__period">{era.period}</p>
+          <h3 class="mt__title">{era.title}</h3>
+          <p class="mt__story">{era.story}</p>
+          <p class="mt__feel">“{era.feel}”</p>
+          {(era.favorites.length > 0 || era.link) && (
+            <div class="mt__meta">
+              {era.favorites.length > 0 && (
+                <ul class="mt__favorites" aria-label="Favorites">
+                  {era.favorites.map((name) => (
+                    <li>{name}</li>
+                  ))}
+                </ul>
+              )}
+              {era.link && (
+                <a class="mt__link" href={era.link.href}>
+                  {era.link.label} →
+                </a>
+              )}
+            </div>
+          )}
+        </article>
+      ))
+    }
+  </div>
+
+</figure>
+
+<script>
+  // Auto-advance interval; any click or arrow key stops it for good.
+  const STEP_MS = 3000;
+
+  document.querySelectorAll<HTMLElement>("[data-music-timeline]").forEach((root) => {
+    const cues = [...root.querySelectorAll<HTMLButtonElement>("[data-cue]")];
+    const bands = [...root.querySelectorAll<SVGPathElement>(".mt__band")];
+    const chips = [...root.querySelectorAll<HTMLElement>(".mt__chip")];
+    const cards = [...root.querySelectorAll<HTMLElement>("[data-card]")];
+    const cardStack = root.querySelector<HTMLElement>(".mt__cards")!;
+    const playhead = root.querySelector<HTMLElement>("[data-playhead]")!;
+    const n = cues.length;
+
+    const amounts = new Map(bands.map((band) => [band.dataset.genre!, band.dataset.amount!.split(",").map(Number)]));
+    const peak = (i: number) => Math.max(...[...amounts.values()].map((a) => a[i]));
+
+    let active = n - 1;
+    let hovered: string | null = null;
+    let timer: number | undefined;
+
+    // Hovering a genre wins over the era view; otherwise the era's biggest genres glow brightest.
+    const paint = () => {
+      const top = peak(active);
+      bands.forEach((band) => {
+        const amount = amounts.get(band.dataset.genre!)![active];
+        const opacity = hovered ? (band.dataset.genre === hovered ? 1 : 0.12) : 0.25 + 0.75 * (amount / top);
+        band.style.opacity = String(opacity);
+      });
+      chips.forEach((chip) => {
+        const amount = amounts.get(chip.dataset.genre!)![active];
+        chip.classList.toggle("is-dim", hovered ? chip.dataset.genre !== hovered : amount === 0);
+      });
+    };
+
+    const select = (i: number, focus = false) => {
+      active = i;
+      cues.forEach((cue, k) => {
+        cue.setAttribute("aria-pressed", String(k === i));
+        cue.tabIndex = k === i ? 0 : -1;
+      });
+      if (focus) cues[i].focus();
+      playhead.style.left = `${((i + 0.5) / n) * 100}%`;
+      cards.forEach((card) => card.classList.toggle("is-active", card.dataset.card === String(i)));
+      paint();
+    };
+
+    // User took over: stop the tour and let screen readers hear card changes from now on.
+    const takeOver = () => {
+      clearInterval(timer);
+      timer = undefined;
+      cardStack.setAttribute("aria-live", "polite");
+    };
+
+    cues.forEach((cue, i) => {
+      cue.addEventListener("click", () => {
+        takeOver();
+        select(i);
+      });
+      // Arrow keys work like a jog wheel across the cues.
+      cue.addEventListener("keydown", (event) => {
+        const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: n - 1 }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        takeOver();
+        select(Math.min(n - 1, Math.max(0, next)), true);
+      });
+    });
+
+    const hover = (genre: string | null) => {
+      hovered = genre;
+      paint();
+    };
+    [...bands, ...chips].forEach((el) => {
+      el.addEventListener("pointerenter", () => hover((el as HTMLElement).dataset.genre ?? null));
+      el.addEventListener("pointerleave", () => hover(null));
+    });
+
+    paint();
+
+    // Reduced motion: stay on "Now" and let the visitor click through.
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    // Start the tour from the beginning once the timeline scrolls into view, looping back after "Now".
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      select(0);
+      timer = window.setInterval(() => select((active + 1) % n), STEP_MS);
+    }, { threshold: 0.4 });
+    observer.observe(root);
+  });
+</script>
+
+<style>
+  .mt {
+    margin: 2.2rem 0 2.6rem;
+    font-family: var(--font-mono-stack);
+  }
+
+  .mt__deck {
+    padding: 1.1rem 1rem 0.6rem;
+    border: 1px solid var(--line);
+    background: var(--bg-strong);
+  }
+
+  .mt__wave {
+    position: relative;
+    height: clamp(150px, 26vw, 220px);
+  }
+
+  .mt__wave svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .mt__band {
+    fill: var(--band);
+    fill-opacity: 0.88;
+    transition: opacity 420ms ease;
+  }
+
+  .mt__playhead {
+    position: absolute;
+    top: -0.4rem;
+    bottom: -0.4rem;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--text);
+    pointer-events: none;
+    transition: left 520ms cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .mt__playhead::before {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border: 5px solid transparent;
+    border-top-color: var(--text);
+    content: "";
+    transform: translateX(-50%);
+  }
+
+  .mt__cues {
+    display: grid;
+    grid-template-columns: repeat(var(--eras), 1fr);
+    margin-top: 0.7rem;
+  }
+
+  .mt__cue {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    padding: 0.35rem 0.1rem;
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    text-align: center;
+    cursor: pointer;
+    transition: color var(--transition);
+  }
+
+  .mt__cue:hover,
+  .mt__cue[aria-pressed="true"] {
+    color: var(--text);
+  }
+
+  .mt__cue:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .mt__cue-dot {
+    position: relative;
+    width: 0.62rem;
+    height: 0.62rem;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    transition: background var(--transition), transform var(--transition);
+  }
+
+  .mt__cue[aria-pressed="true"] .mt__cue-dot {
+    background: currentColor;
+    transform: scale(1.15);
+  }
+
+  /* The current era pulses like a playing deck. */
+  .mt__cue[data-live] .mt__cue-dot::after {
+    position: absolute;
+    inset: -4px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    content: "";
+    animation: mt-pulse 2.4s ease-out infinite;
+  }
+
+  @keyframes mt-pulse {
+    from {
+      opacity: 0.9;
+      transform: scale(0.7);
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.8);
+    }
+  }
+
+  .mt__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem 1.2rem;
+    margin-top: 0.9rem;
+  }
+
+  .mt .mt__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.9rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mt .mt__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    color: var(--text-soft);
+    font-size: var(--text-xs);
+    cursor: default;
+    transition: opacity var(--transition);
+  }
+
+  .mt .mt__chip.is-dim {
+    opacity: 0.4;
+  }
+
+  .mt__swatch {
+    width: 0.7rem;
+    height: 0.7rem;
+    background: var(--band);
+  }
+
+  /* Cards share one grid cell so they can crossfade without layout jumps. */
+  .mt__cards {
+    display: grid;
+    margin-top: 1rem;
+  }
+
+  .mt__card {
+    grid-area: 1 / 1;
+    padding: 1.1rem 1.2rem 1.2rem;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--band, var(--line-strong));
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition:
+      opacity 360ms ease,
+      transform 360ms ease,
+      visibility 0s linear 360ms;
+  }
+
+  .mt__card.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 420ms ease 120ms,
+      transform 420ms ease 120ms,
+      visibility 0s;
+  }
+
+  .mt .mt__period {
+    margin: 0 0 0.3rem;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mt .mt__title {
+    margin: 0 0 0.6rem;
+    color: var(--text);
+    font-family: var(--font-serif-stack);
+    font-size: 1.3rem;
+  }
+
+  .mt .mt__story {
+    margin: 0;
+    color: var(--text-soft);
+    font-family: var(--font-serif-stack);
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .mt .mt__feel {
+    margin: 0.7rem 0 0;
+    color: var(--text);
+    font-family: var(--font-serif-stack);
+    font-size: 1rem;
+    font-style: italic;
+  }
+
+  .mt__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+    margin-top: 0.9rem;
+  }
+
+  .mt .mt__favorites {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mt .mt__favorites li {
+    margin: 0;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-size: var(--text-xs);
+  }
+
+  .mt .mt__link {
+    font-size: var(--text-sm);
+  }
+
+  .mt .mt__caption {
+    text-align: left;
+    margin-top: 0.8rem;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 560px) {
+    .mt__deck {
+      padding-inline: 0.5rem;
+    }
+
+    .mt__cue-label {
+      font-size: 0.62rem;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mt__band,
+    .mt__playhead,
+    .mt__card,
+    .mt__card.is-active {
+      transition: none;
+    }
+
+    .mt__cue[data-live] .mt__cue-dot::after {
+      animation: none;
+    }
+  }
+</style>

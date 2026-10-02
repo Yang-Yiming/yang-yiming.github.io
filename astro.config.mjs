@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import { unified } from "@astrojs/markdown-remark";
+import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import remarkBreaks from "remark-breaks";
 import remarkMath from "remark-math";
@@ -9,7 +10,7 @@ export default defineConfig({
   site: "https://yang-yiming.github.io",
   output: "static",
   trailingSlash: "ignore",
-  integrations: [sitemap()],
+  integrations: [mdx(), sitemap()],
   markdown: {
     processor: unified({
       remarkPlugins: [remarkBreaks, remarkMath],
