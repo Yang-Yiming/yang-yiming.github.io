@@ -2,13 +2,16 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Hero from "../components/Hero.astro";
 import Projects from "../components/Projects.astro";
-import Section from "../components/Section.astro";
-import { getSections } from "../lib/content";
-
-const sections = await getSections();
-const [home, ...rest] = sections;
+import Research from "../components/Research.astro";
+import Life from "../components/Life.astro";
+import Blog from "../components/Blog.astro";
+import Fun from "../components/Fun.astro";
 ---
 <BaseLayout spy>
-  <Hero home={home} sections={sections} />
-  {rest.map((section) => (section.id === "projects" ? <Projects section={section} /> : <Section section={section} />))}
+  <Hero />
+  <Projects />
+  <Research />
+  <Life />
+  <Blog />
+  <Fun />
 </BaseLayout>

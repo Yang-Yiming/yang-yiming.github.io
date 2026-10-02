@@ -1,22 +1,25 @@
 ---
-import type { Section } from "../lib/content";
+import { NAV, sectionKicker, type SectionId } from "../consts";
 
 interface Props {
-  section: Section;
+  id: SectionId;
+  title: string;
+  source?: string;
 }
 
-const { section } = Astro.props;
+const { id, title, source } = Astro.props;
+const label = NAV.find((item) => item.id === id)?.label;
 ---
 <div class="section-header">
   <div class="section-heading">
-    <p class="section-kicker">{section.kicker}</p>
-    <a class="section-heading-link" href={`#${section.id}`} aria-label={`Link to ${section.data.nav} section`}>
+    <p class="section-kicker">{sectionKicker(id)}</p>
+    <a class="section-heading-link" href={`#${id}`} aria-label={`Link to ${label} section`}>
       <span aria-hidden="true" class="section-heading-link__anchor">#</span>
-      <h2 class="section-title">{section.data.title}</h2>
+      <h2 class="section-title">{title}</h2>
     </a>
   </div>
   <div class="section-body">
-    {section.data.source && <p class="section-source-label">{section.data.source}</p>}
-    <div class="section-intro prose-inline" set:html={section.rendered?.html} />
+    {source && <p class="section-source-label">{source}</p>}
+    <div class="section-intro prose-inline"><slot /></div>
   </div>
 </div>

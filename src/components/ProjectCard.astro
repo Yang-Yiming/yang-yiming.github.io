@@ -1,24 +1,35 @@
 ---
-import type { CollectionEntry } from "astro:content";
-import { getRepoStats, languageColors } from "../lib/github";
+import { getRepoStats, languageColors } from "../github";
+import type { Project } from "../projects";
 
 interface Props {
-  project: CollectionEntry<"projects">;
+  project: Project;
 }
 
 const { project } = Astro.props;
-const { repo } = project.data;
+const { repo } = project;
 const stats = await getRepoStats(repo);
-const language = stats?.language ?? project.data.language;
+const language = stats?.language ?? project.language;
 const stars = stats && stats.stars > 0 ? new Intl.NumberFormat("en", { notation: "compact" }).format(stats.stars) : undefined;
 const updated = stats?.pushedAt.getUTCFullYear();
+// Split each line on backticks: odd parts are code spans.
+const lines = project.description.map((line) => line.split("`"));
 ---
 <a class="project-card" href={`https://github.com/${repo}`} target="_blank" rel="noreferrer">
   <div class="project-card__header">
     <h3 class="project-card__title">{repo}</h3>
     <span class="project-card__icon" aria-hidden="true">↗</span>
   </div>
-  <div class="project-card__description prose-inline" set:html={project.rendered?.html} />
+  <div class="project-card__description prose-inline">
+    <p>
+      {lines.map((parts, index) => (
+        <>
+          {index > 0 && <br />}
+          {parts.map((part, i) => (i % 2 ? <code>{part}</code> : part))}
+        </>
+      ))}
+    </p>
+  </div>
   <div class="project-card__footer">
     <div class="project-card__meta">
       {language && (

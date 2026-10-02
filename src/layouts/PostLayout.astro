@@ -1,14 +1,8 @@
 ---
 import { render } from "astro:content";
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import { capitalize, entryCollections, formatMonth, getEntries, type Entry } from "../../lib/content";
-
-export async function getStaticPaths() {
-  const entries = (await Promise.all(entryCollections.map(getEntries))).flat();
-  return entries
-    .filter((entry) => !entry.data.external)
-    .map((entry) => ({ params: { collection: entry.collection, slug: entry.id }, props: { entry } }));
-}
+import BaseLayout from "./BaseLayout.astro";
+import { NAV } from "../consts";
+import { formatMonth, type Entry } from "../entries";
 
 interface Props {
   entry: Entry;
@@ -17,12 +11,13 @@ interface Props {
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const { title, summary, date, label, embed } = entry.data;
+const section = NAV.find((item) => item.id === entry.collection)?.label;
 ---
 <BaseLayout title={title} description={summary} activeSection={entry.collection}>
   <article class="entry-page">
     <header class="entry-page__header">
-      <a class="entry-page__backlink" href={`/#${entry.collection}`}>← Back to {capitalize(entry.collection)}</a>
-      <p class="section-kicker">{capitalize(entry.collection)}{label && ` · ${label}`}</p>
+      <a class="entry-page__backlink" href={`/#${entry.collection}`}>← Back to {section}</a>
+      <p class="section-kicker">{section}{label && ` · ${label}`}</p>
       <h1 class="entry-page__title">{title}</h1>
       <time class="entry-page__meta" datetime={date.toISOString()}>{formatMonth(date)}</time>
       <p class="entry-page__summary">{summary}</p>

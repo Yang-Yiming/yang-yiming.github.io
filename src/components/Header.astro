@@ -1,7 +1,6 @@
 ---
 import ThemeToggle from "./ThemeToggle.astro";
-import { site } from "../content/site";
-import { getSections } from "../lib/content";
+import { NAV, SITE } from "../consts";
 
 interface Props {
   activeSection?: string;
@@ -9,24 +8,23 @@ interface Props {
 }
 
 const { activeSection = "home", spy = false } = Astro.props;
-const sections = await getSections();
 ---
 <header class="site-header">
   <div class="site-header__inner">
     <a class="site-mark" href="/">
-      <span class="site-mark__name">{site.name}</span>
-      <span class="site-mark__role">{site.role}</span>
+      <span class="site-mark__name">{SITE.name}</span>
+      <span class="site-mark__role">{SITE.role}</span>
     </a>
     <div class="site-header__controls">
       <nav aria-label="Sections" class="site-nav" data-spy={spy ? "" : undefined}>
-        {sections.map(({ id, data }) => (
+        {NAV.map(({ id, label }) => (
           <a
             class:list={["site-nav__link", id === activeSection && "is-active"]}
             href={id === "home" ? "/" : `/#${id}`}
             data-section={id}
             aria-current={id === activeSection ? "true" : undefined}
           >
-            {data.nav}
+            {label}
           </a>
         ))}
       </nav>

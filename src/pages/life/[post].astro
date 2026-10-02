@@ -1,0 +1,9 @@
+---
+import PostLayout from "../../layouts/PostLayout.astro";
+import { getEntryPaths } from "../../entries";
+
+export function getStaticPaths() {
+  return getEntryPaths("life");
+}
+---
+<PostLayout entry={Astro.props.entry} />

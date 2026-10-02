@@ -1,13 +1,13 @@
 import rss from "@astrojs/rss";
 import type { APIContext } from "astro";
-import { site } from "../content/site";
-import { entryHref, getEntries } from "../lib/content";
+import { SITE } from "../consts";
+import { entryHref, getEntries } from "../entries";
 
 export async function GET(context: APIContext) {
   const entries = await getEntries("blog");
   return rss({
-    title: site.name,
-    description: site.description,
+    title: SITE.name,
+    description: SITE.description,
     site: context.site!,
     items: entries.map((entry) => ({
       title: entry.data.title,

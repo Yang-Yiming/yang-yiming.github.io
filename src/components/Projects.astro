@@ -1,21 +1,17 @@
 ---
-import { getCollection } from "astro:content";
 import SectionHeader from "./SectionHeader.astro";
 import ProjectCard from "./ProjectCard.astro";
-import type { Section } from "../lib/content";
+import { PROJECT_GROUPS, PROJECTS } from "../projects";
 
-interface Props {
-  section: Section;
-}
-
-const { section } = Astro.props;
-const projects = (await getCollection("projects")).sort((a, b) => a.data.order - b.data.order);
-const groups = section.data.groups
-  .map((group) => ({ ...group, items: projects.filter((project) => project.data.group === group.id) }))
-  .filter((group) => group.items.length > 0);
+const groups = PROJECT_GROUPS.map((group) => ({
+  ...group,
+  items: PROJECTS.filter((project) => project.group === group.id),
+})).filter((group) => group.items.length > 0);
 ---
-<section class="editorial-section section-frame" id={section.id}>
-  <SectionHeader section={section} />
+<section class="editorial-section section-frame" id="projects">
+  <SectionHeader id="projects" title="Projects." source="GitHub">
+    <p>Selected GitHub work, grouped by how I participate: contributing to other repositories and maintaining my own.</p>
+  </SectionHeader>
   <div class="projects-groups">
     {groups.map((group) => (
       <div class="projects-group">

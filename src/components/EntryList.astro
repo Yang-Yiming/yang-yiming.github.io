@@ -1,0 +1,23 @@
+---
+import ListRow from "./ListRow.astro";
+import { entryHref, entryLabel, getEntries, type EntryCollection } from "../entries";
+
+interface Props {
+  collection: EntryCollection;
+}
+
+const entries = await getEntries(Astro.props.collection);
+---
+{entries.length > 0 && (
+  <div class="section-list">
+    {entries.map((entry) => (
+      <ListRow
+        href={entryHref(entry)}
+        label={entryLabel(entry)}
+        title={entry.data.title}
+        description={entry.data.summary}
+        external={Boolean(entry.data.external)}
+      />
+    ))}
+  </div>
+)}

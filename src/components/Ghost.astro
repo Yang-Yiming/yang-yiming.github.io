@@ -1,8 +1,8 @@
 ---
 import { getImage } from "astro:assets";
 
-// Every image dropped into src/assets/ghost/ can appear on the ghost's face.
-const modules = import.meta.glob<{ default: ImageMetadata }>("../assets/ghost/*.{png,jpg,jpeg,webp,avif}", { eager: true });
+// Every image dropped into src/images/ghost/ can appear on the ghost's face.
+const modules = import.meta.glob<{ default: ImageMetadata }>("../images/ghost/*.{png,jpg,jpeg,webp,avif}", { eager: true });
 const photos = await Promise.all(
   Object.values(modules).map(async ({ default: src }) => (await getImage({ src, width: 170, format: "webp" })).src),
 );

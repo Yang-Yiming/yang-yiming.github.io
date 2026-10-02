@@ -1,28 +1,19 @@
 ---
 import Ghost from "./Ghost.astro";
-import { site } from "../content/site";
-import type { Section } from "../lib/content";
+import { NAV, QUICK_LINKS, SITE, sectionKicker } from "../consts";
 
-interface Props {
-  home: Section;
-  sections: Section[];
-}
-
-const { home, sections } = Astro.props;
-const quickLinks = site.quickLinks
-  .map((id) => sections.find((section) => section.id === id))
-  .filter((section) => section !== undefined);
+const quickLinks = NAV.filter((item) => QUICK_LINKS.includes(item.id));
 ---
 <section class="hero" id="home" data-ghost-trigger>
   <div class="hero__masthead">
     <div class="hero__lead">
-      <p class="section-kicker">{home.kicker}</p>
+      <p class="section-kicker">{sectionKicker("home")}</p>
       <a class="section-heading-link" href="#home" aria-label="Link to Home section">
         <span aria-hidden="true" class="section-heading-link__anchor">#</span>
-        <h1 class="hero__title">{home.data.title}</h1>
+        <h1 class="hero__title">Hello, I'm Yang Yiming</h1>
       </a>
-      <p class="hero__summary">{site.summary}</p>
-      <p class="hero__tagline">{site.tagline}</p>
+      <p class="hero__summary">{SITE.summary}</p>
+      <p class="hero__tagline">{SITE.tagline}</p>
     </div>
     <Ghost />
   </div>
@@ -30,15 +21,21 @@ const quickLinks = site.quickLinks
   <div class="hero__columns">
     <div class="hero__column">
       <p class="section-kicker">Overview</p>
-      <div class="hero__body prose-inline" set:html={home.rendered?.html} />
+      <div class="hero__body prose-inline">
+        <p><strong>SUSTech</strong> · Shenzhen, China</p>
+        <p><strong>Data Science</strong> Undergraduate · Class of 2024</p>
+        <p><strong>GPA</strong> 3.92/4.00 · <strong>Rank</strong> 3/59</p>
+        <p><strong>Key coursework</strong>: Mathematical Analysis, Advanced Linear Algebra, Data Structure and Algorithm Analysis (H), Foundation of Probability, Artificial Intelligence.</p>
+        <p><strong>Programming</strong>: Python, Java, LaTeX, a bit Rust</p>
+      </div>
     </div>
     <div class="hero__column">
       <p class="section-kicker">Quick entry</p>
       <div class="hero__index">
-        {quickLinks.map((section) => (
-          <a class="hero__index-link" href={`#${section.id}`}>
-            <span>{section.data.nav}<span class="hero__index-arrow" aria-hidden="true"> →</span></span>
-            <span class="hero__index-kicker">{section.kicker}</span>
+        {quickLinks.map((item) => (
+          <a class="hero__index-link" href={`#${item.id}`}>
+            <span>{item.label}<span class="hero__index-arrow" aria-hidden="true"> →</span></span>
+            <span class="hero__index-kicker">{sectionKicker(item.id)}</span>
           </a>
         ))}
       </div>
@@ -46,7 +43,7 @@ const quickLinks = site.quickLinks
     <div class="hero__column">
       <p class="section-kicker">Elsewhere</p>
       <div class="hero__index">
-        {site.links.map((link) => (
+        {SITE.links.map((link) => (
           <a class="hero__index-link" href={link.href} target="_blank" rel="noreferrer">
             <span>{link.label}</span>
             <span class="hero__index-arrow" aria-hidden="true">↗</span>
