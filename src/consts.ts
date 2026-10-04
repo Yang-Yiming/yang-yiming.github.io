@@ -7,9 +7,9 @@ export const SITE = {
     "I love old-school street dance and bass-heavy music, and I build tools with AI whenever I need one.",
   tagline: "When I'm thirsty, I drink.",
   links: [
-    { label: "GitHub", href: "https://github.com/Yang-Yiming" },
-    { label: "Email", href: "mailto:12411332@mail.sustech.edu.cn" },
-  ],
+    { label: "GitHub", href: "https://github.com/Yang-Yiming", icon: "github" },
+    { label: "Email", href: "mailto:12411332@mail.sustech.edu.cn", icon: "mail" },
+  ] as const,
 };
 
 // Home page sections, in page order. Ids match the section anchors.

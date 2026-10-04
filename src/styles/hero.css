@@ -82,6 +82,21 @@
     padding-left var(--transition);
 }
 
+.hero__index-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.hero__index-icon {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  color: var(--text-muted);
+  transition: color var(--transition);
+}
+
 .hero__index-kicker {
   color: var(--text-muted);
   font-size: var(--text-xs);
@@ -101,7 +116,9 @@
 }
 
 .hero__index-link:hover .hero__index-arrow,
-.hero__index-link:focus-visible .hero__index-arrow {
+.hero__index-link:focus-visible .hero__index-arrow,
+.hero__index-link:hover .hero__index-icon,
+.hero__index-link:focus-visible .hero__index-icon {
   color: var(--accent);
 }
 

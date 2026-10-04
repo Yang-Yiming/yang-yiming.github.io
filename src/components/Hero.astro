@@ -43,12 +43,46 @@ const quickLinks = NAV.filter((item) => QUICK_LINKS.includes(item.id));
     <div class="hero__column">
       <p class="section-kicker">Elsewhere</p>
       <div class="hero__index">
-        {SITE.links.map((link) => (
-          <a class="hero__index-link" href={link.href} target="_blank" rel="noreferrer">
-            <span>{link.label}</span>
-            <span class="hero__index-arrow" aria-hidden="true">↗</span>
-          </a>
-        ))}
+        {SITE.links.map((link) => {
+          const external = link.href.startsWith("http");
+          return (
+            <a
+              class="hero__index-link"
+              href={link.href}
+              target={external ? "_blank" : undefined}
+              rel={external ? "noreferrer" : undefined}
+            >
+              <span class="hero__index-label">
+                <svg
+                  class="hero__index-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  {link.icon === "github" ? (
+                    <path
+                      fill="currentColor"
+                      d="M12 .5A11.5 11.5 0 0 0 .5 12.02c0 5.09 3.29 9.4 7.86 10.93.58.1.79-.25.79-.55v-2.1c-3.2.7-3.88-1.36-3.88-1.36-.53-1.35-1.28-1.71-1.28-1.71-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.2 1.77 1.2 1.03 1.78 2.7 1.27 3.36.97.1-.75.4-1.27.73-1.56-2.55-.29-5.24-1.29-5.24-5.73 0-1.27.45-2.3 1.18-3.11-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.19a10.9 10.9 0 0 1 5.79 0c2.2-1.5 3.17-1.19 3.17-1.19.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.11 0 4.45-2.69 5.43-5.25 5.72.41.36.78 1.07.78 2.16v3.2c0 .31.2.66.8.55A11.51 11.51 0 0 0 23.5 12.02C23.5 5.66 18.35.5 12 .5Z"
+                    />
+                  ) : (
+                    <g
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect x="2.5" y="4.5" width="19" height="15" rx="2" />
+                      <path d="m3.2 6 8.8 6.3L20.8 6" />
+                    </g>
+                  )}
+                </svg>
+                <span>{link.label}</span>
+              </span>
+              <span class="hero__index-arrow" aria-hidden="true">↗</span>
+            </a>
+          );
+        })}
       </div>
     </div>
   </div>
