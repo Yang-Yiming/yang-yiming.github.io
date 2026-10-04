@@ -106,9 +106,9 @@ export const ERAS: Era[] = [
     id: "now",
     period: "Now",
     title: "K-pop, by way of the club",
-    story: "Lately I've been listening to some K-pop, because a lot of it is built on house and garage too.",
-    favorites: [],
-    feel: "Familiar grooves, new voices.",
+    story: "Lately I've been listening to some K-pop, because a lot of it is built on house and garage too. My current favorite album is Fred again..'s [Actual Life 3](https://en.wikipedia.org/wiki/Actual_Life_3_%28January_1_%E2%80%93_September_9_2022%29), a record of his everyday life at the time, and it moved me more than I expected. It's what finally made me realize that music isn't all about sound design techniques; it's just as much about expressing emotion.",
+    favorites: ["Fred again.."],
+    feel: "Less about how it's made, more about what it says.",
   },
 ];
 
