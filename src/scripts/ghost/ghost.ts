@@ -1,0 +1,539 @@
+import {
+  Chunk,
+  Spring,
+  Tail,
+  add,
+  clamp,
+  connect,
+  dist,
+  len,
+  lerp,
+  mul,
+  norm,
+  rand,
+  sub,
+  v,
+  type Vec,
+} from "./physics";
+
+// Everything is laid out in the original 400×410 scene units and scaled on draw.
+const SCENE_W = 400;
+const SCENE_H = 410;
+const TICK = 1 / 40; // Rain World runs its physics at 40 ticks per second.
+
+const HOME = v(200, 152); // centre of the dome at rest
+const RADIUS = 55; // half the 110px body width
+const BODY_LEN = 68; // dome centre → hem, matches the original silhouette
+const FACE_R = 42.5;
+const LOBES = [44, 22, 0, -22, -44]; // skirt lobe centres, right → left
+const NOTCHES = [55, 33, 11, -11, -33, -55];
+
+const BODY_TOP = "#b4c1ca";
+const BODY_BOTTOM = "#a2b0bb";
+const BODY_ANGRY = "#c4a9ae";
+const EYE = "#131a24";
+const SYMBOL = "#aab8c2";
+
+type Look = { target: Vec; until: number };
+type Mood = "idle" | "happy" | "angry";
+
+type Symbol = {
+  kind: "x" | "o" | "+";
+  home: Vec;
+  size: number;
+  phase: number;
+  spin: number;
+  body: Chunk;
+};
+
+export class Ghost {
+  private ctx: CanvasRenderingContext2D;
+  private scale = 1;
+  private dpr = 1;
+
+  private head = new Chunk(HOME, 0.6);
+  private hip = new Chunk(add(HOME, v(0, BODY_LEN)), 0.4);
+  private tails = LOBES.map((x) => new Tail(add(HOME, v(x, BODY_LEN)), 3, 5.5, [0.22, 0.14, 0.09]));
+
+  // Expression state, all springs so every change eases and overshoots a little.
+  private lookX = new Spring(0, 0, 0.12, 0.72);
+  private lookY = new Spring(0, 0, 0.12, 0.72);
+  private tilt = new Spring(0, 0, 0.06, 0.8);
+  private blink = new Spring(1, 1, 0.55, 0.45);
+  private happy = new Spring(0, 0, 0.12, 0.7);
+  private angry = new Spring(0, 0, 0.15, 0.7);
+  private faceSlide = new Spring(0, 0, 0.07, 0.78);
+  private faceAlpha = new Spring(1, 1, 0.2, 0.6);
+  private faceScale = new Spring(1, 1, 0.12, 0.72);
+  private photoSlide = new Spring(-150, -150, 0.07, 0.78);
+  private photoAlpha = new Spring(0, 0, 0.15, 0.65);
+
+  private symbols: Symbol[];
+  private photo: HTMLImageElement | null = null;
+
+  private ticks = 0;
+  private mood: Mood = "idle";
+  private moodTimers: { at: number; fn: () => void }[] = [];
+  private look: Look = { target: v(0, 0), until: 0 };
+  private nextBlink = 60;
+  private pointer: Vec | null = null;
+  private lastPointer: Vec | null = null;
+  private pointerSeen = -Infinity;
+  private reduced: boolean;
+
+  private running = false;
+  private raf = 0;
+  private lastTime = 0;
+  private acc = 0;
+
+  constructor(private canvas: HTMLCanvasElement) {
+    this.ctx = canvas.getContext("2d")!;
+    this.reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const sym = (kind: Symbol["kind"], x: number, y: number, size = 12): Symbol => ({
+      kind,
+      home: v(x, y),
+      size,
+      phase: rand(0, Math.PI * 2),
+      spin: rand(-0.004, 0.004),
+      body: new Chunk(v(x, y), 1),
+    });
+    // Same six marks as the original, positions converted to scene units.
+    this.symbols = [
+      sym("x", 24, 154),
+      sym("o", 19, 201, 18),
+      sym("+", 50, 236),
+      sym("x", 374, 146),
+      sym("o", 383, 193, 14),
+      sym("+", 350, 236),
+    ];
+
+    new ResizeObserver(() => this.resize()).observe(canvas);
+    this.resize();
+    window.addEventListener("pointermove", (event) => this.onPointer(event), { passive: true });
+  }
+
+  setPhoto(image: HTMLImageElement | null) {
+    this.photo = image;
+  }
+
+  get busy() {
+    return this.mood !== "idle";
+  }
+
+  start() {
+    if (this.running) return;
+    this.running = true;
+    this.lastTime = performance.now();
+    const frame = (now: number) => {
+      if (!this.running) return;
+      // Fixed-step simulation, render interpolates between the last two ticks.
+      this.acc += Math.min(0.1, (now - this.lastTime) / 1000);
+      this.lastTime = now;
+      while (this.acc >= TICK) {
+        this.update();
+        this.acc -= TICK;
+      }
+      this.draw(this.acc / TICK);
+      this.raf = requestAnimationFrame(frame);
+    };
+    this.raf = requestAnimationFrame(frame);
+  }
+
+  stop() {
+    this.running = false;
+    cancelAnimationFrame(this.raf);
+  }
+
+  // ───────────────────────────── reactions ─────────────────────────────
+
+  private schedule(seconds: number, fn: () => void) {
+    this.moodTimers.push({ at: this.ticks + Math.round(seconds / TICK), fn });
+  }
+
+  private runSchedule() {
+    const due = this.moodTimers.filter((timer) => this.ticks >= timer.at);
+    if (!due.length) return;
+    this.moodTimers = this.moodTimers.filter((timer) => this.ticks < timer.at);
+    due.forEach((timer) => timer.fn());
+  }
+
+  /** Face slides off to the right, the photo face slides in from the left, then back. */
+  playHappy() {
+    this.mood = "happy";
+    this.happy.target = 1;
+    this.head.vel.y -= 7; // a little hop
+    this.blink.target = 1;
+
+    if (!this.photo) {
+      this.schedule(2.6, () => this.endMood());
+      return;
+    }
+    this.faceSlide.target = 150;
+    this.schedule(0.55, () => (this.faceAlpha.target = 0));
+    this.schedule(1.0, () => {
+      this.photoSlide.snap(-150, 0);
+      this.photoAlpha.target = 1;
+    });
+    this.schedule(1.6, () => (this.head.vel.y -= 3.5));
+    this.schedule(4.6, () => {
+      this.photoAlpha.target = 0;
+      this.faceSlide.snap(0);
+      this.faceScale.snap(0.55, 1);
+      this.faceAlpha.target = 1;
+    });
+    this.schedule(5.4, () => this.endMood());
+  }
+
+  /** Shivering fit with angry brows, then it shakes it off. */
+  playAngry() {
+    this.mood = "angry";
+    this.angry.target = 1;
+    this.schedule(2.0, () => {
+      this.angry.target = 0;
+      this.head.vel.y -= 2;
+    });
+    this.schedule(2.6, () => this.endMood());
+  }
+
+  private endMood() {
+    this.mood = "idle";
+    this.happy.target = 0;
+    this.angry.target = 0;
+    this.faceSlide.target = 0;
+    this.faceAlpha.target = 1;
+    this.photoAlpha.target = 0;
+  }
+
+  // ───────────────────────────── simulation ─────────────────────────────
+
+  private onPointer(event: PointerEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect.width) return;
+    const p = v(((event.clientX - rect.left) / rect.width) * SCENE_W, ((event.clientY - rect.top) / rect.height) * SCENE_H);
+    // Only care about the pointer when it is reasonably near the scene.
+    if (p.x < -500 || p.x > SCENE_W + 300 || p.y < -250 || p.y > SCENE_H + 250) return;
+    this.pointer = p;
+    this.pointerSeen = this.ticks;
+  }
+
+  private update() {
+    this.ticks++;
+    const t = this.ticks;
+    this.runSchedule();
+
+    const pointerActive = this.pointer && t - this.pointerSeen < 100;
+    const calm = this.reduced ? 0.25 : 1;
+
+    // ── AI: pick where the head wants to be. ──
+    // Layered sines make a wander that never visibly repeats.
+    const wander = v(
+      (Math.sin(t * 0.011) * 16 + Math.sin(t * 0.0237 + 1.3) * 8) * calm,
+      (Math.sin(t * 0.0171 + 0.7) * 6 + Math.sin(t * (Math.PI * 2) / 96) * 13) * calm,
+    );
+    let goal = add(HOME, wander);
+    if (pointerActive && this.pointer) {
+      // Curious: drift a little toward the cursor, but stay home.
+      const pull = sub(this.pointer, HOME);
+      goal = add(goal, v(clamp(pull.x * 0.08, -26, 26), clamp(pull.y * 0.06, -16, 16)));
+    }
+
+    const toGoal = sub(goal, this.head.pos);
+    const pullK = this.mood === "angry" ? 0.03 : 0.014;
+    this.head.vel = add(this.head.vel, mul(toGoal, pullK));
+
+    // ── forces ──
+    const gravity = 0.45;
+    this.hip.vel.y += gravity;
+    this.head.vel.y -= (gravity * this.hip.mass) / this.head.mass; // buoyant dome holds the hem up
+
+    if (this.mood === "angry" && this.angry.target > 0) {
+      // Shiver: fast alternating kicks plus noise, like a furious little vibration.
+      const dir = t % 4 < 2 ? 1 : -1;
+      this.head.vel.x += dir * 2.2 * calm + rand(-0.6, 0.6);
+      this.head.vel.y += rand(-0.8, 0.8) * calm;
+    }
+
+    // Startle when the cursor whips past the face.
+    if (pointerActive && this.pointer && this.lastPointer) {
+      const speed = dist(this.pointer, this.lastPointer);
+      const away = sub(this.head.pos, this.pointer);
+      if (speed > 18 && len(away) < 70) {
+        this.head.vel = add(this.head.vel, mul(norm(away), 2.5));
+        this.blink.snap(0.1, 1);
+      }
+    }
+    this.lastPointer = this.pointer ? { ...this.pointer } : null;
+
+    this.head.update(0.9);
+    this.hip.update(0.88);
+    // Rest a bit short so gravity stretches it to BODY_LEN on average.
+    for (let i = 0; i < 2; i++) connect(this.head, this.hip, BODY_LEN - 4, 0.2);
+
+    // ── skirt: five dangling chains hanging from the hem ──
+    const axis = norm(sub(this.head.pos, this.hip.pos)); // points "up" along the body
+    const right = v(-axis.y, axis.x);
+    const ws = this.widthScale(dist(this.head.pos, this.hip.pos));
+    const wave = this.mood === "happy" ? 0.55 : 0.18;
+    const waveSpeed = this.mood === "happy" ? 0.3 : 0.09;
+    this.tails.forEach((tail, i) => {
+      const x = LOBES[i] * ws;
+      const root = add(add(this.hip.pos, mul(right, x)), mul(axis, 4));
+      const rest = norm(add(mul(axis, -1), mul(right, x / 300)));
+      tail.update(root, rest, 0.78, 0.25, (seg, j) => {
+        // Travelling ripple along the hem, stronger toward the tips.
+        seg.vel = add(seg.vel, mul(right, Math.sin(t * waveSpeed - i * 1.1) * wave * (j + 1) * 0.35));
+      });
+    });
+
+    // ── gaze ──
+    if (pointerActive && this.pointer) {
+      this.look.target = this.pointer;
+    } else if (t >= this.look.until) {
+      // Idle glances: mostly ahead, sometimes at the page text on the left, sometimes around.
+      const r = Math.random();
+      this.look.target =
+        r < 0.35 ? add(this.head.pos, v(0, 30)) : r < 0.6 ? v(-260, 120) : add(this.head.pos, v(rand(-200, 200), rand(-80, 120)));
+      this.look.until = t + Math.round(rand(50, 160));
+    }
+    let look = sub(this.look.target, this.head.pos);
+    const reach = clamp(len(look) / 140, 0, 1);
+    look = mul(norm(look), reach);
+    if (this.mood === "angry" && this.angry.target > 0) look = v(t % 6 < 3 ? -1 : 1, 0.15);
+    this.lookX.target = look.x;
+    this.lookY.target = look.y * 0.8;
+    this.tilt.target = look.x * 0.1 + (this.mood === "happy" ? Math.sin(t * 0.12) * 0.08 : 0);
+
+    // ── blinking ──
+    if (t >= this.nextBlink && this.mood === "idle") {
+      this.blink.target = 0.05;
+      this.nextBlink = t + Math.round(Math.random() < 0.2 ? 8 : rand(90, 220)); // sometimes a double blink
+    }
+    if (this.blink.value < 0.15) this.blink.target = 1;
+
+    [this.lookX, this.lookY, this.tilt, this.blink, this.happy, this.angry].forEach((s) => s.update());
+    [this.faceSlide, this.faceAlpha, this.faceScale, this.photoSlide, this.photoAlpha].forEach((s) => s.update());
+
+    // ── floating marks get nudged by the body passing by ──
+    this.symbols.forEach((s, i) => {
+      const b = s.body;
+      const drift = v(Math.sin(t * 0.02 + i * 2) * 4, Math.cos(t * 0.017 + i) * 5);
+      b.vel = add(b.vel, mul(sub(add(s.home, drift), b.pos), 0.01));
+      const away = sub(b.pos, this.head.pos);
+      const d = len(away);
+      if (d < 120) b.vel = add(b.vel, mul(norm(away), (120 - d) * 0.004 + len(this.head.vel) * 0.01));
+      b.update(0.9);
+    });
+  }
+
+  private widthScale(length: number) {
+    return clamp(1 / Math.sqrt(length / BODY_LEN), 0.88, 1.12);
+  }
+
+  // ───────────────────────────── graphics ─────────────────────────────
+
+  private resize() {
+    const rect = this.canvas.getBoundingClientRect();
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.scale = rect.width / SCENE_W;
+    this.canvas.width = Math.round(rect.width * this.dpr);
+    this.canvas.height = Math.round(rect.height * this.dpr);
+    if (!this.running) this.draw(1);
+  }
+
+  private draw(ts: number) {
+    const { ctx } = this;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    const k = this.dpr * this.scale;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+
+    this.drawSymbols(ts);
+
+    const H = this.head.at(ts);
+    const P = this.hip.at(ts);
+    const length = dist(H, P);
+    const u = norm(sub(H, P)); // body up
+    const r = v(-u.y, u.x); // body right
+    const ws = this.widthScale(length);
+    const stretch = length / BODY_LEN;
+
+    // Dome frame: body angle plus the head's own tilt toward what it is looking at.
+    const phi = Math.atan2(u.x, -u.y) + this.tilt.at(ts);
+    const ud = v(Math.sin(phi), -Math.cos(phi));
+    const rd = v(Math.cos(phi), Math.sin(phi));
+    const rx = RADIUS * ws;
+    const ry = RADIUS * clamp(stretch, 0.9, 1.12);
+
+    const body = new Path2D();
+    const domeL = sub(H, mul(rd, rx));
+    const domeR = add(H, mul(rd, rx));
+    const hemL = sub(P, mul(r, RADIUS * ws));
+    const hemR = add(P, mul(r, RADIUS * ws));
+    const side = length / 3;
+    body.moveTo(domeL.x, domeL.y);
+    body.ellipse(H.x, H.y, rx, ry, phi, Math.PI, Math.PI * 2);
+    let c1 = sub(domeR, mul(ud, side));
+    let c2 = add(hemR, mul(u, side));
+    body.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, hemR.x, hemR.y);
+
+    // Scalloped hem: each lobe is a cubic whose midpoint lands exactly on its tail tip.
+    const notch = (x: number) => add(add(P, mul(r, x * ws)), mul(u, 1.5));
+    this.tails.forEach((tail, i) => {
+      const a = i === 0 ? hemR : notch(NOTCHES[i]);
+      const b = i === this.tails.length - 1 ? hemL : notch(NOTCHES[i + 1]);
+      const tip = tail.at(tail.segs.length - 1, ts);
+      const bulge = mul(sub(tip, lerp(a, b, 0.5)), 4 / 3);
+      const p1 = add(a, bulge);
+      const p2 = add(b, bulge);
+      if (i === 0) body.lineTo(a.x, a.y);
+      body.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, b.x, b.y);
+    });
+
+    c1 = add(hemL, mul(u, side));
+    c2 = sub(domeL, mul(ud, side));
+    body.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, domeL.x, domeL.y);
+    body.closePath();
+
+    // Body fill: soft top-to-hem gradient, flushed pink while angry.
+    const top = sub(H, mul(ud, ry));
+    const bottom = add(P, mul(u, -16));
+    const grad = ctx.createLinearGradient(top.x, top.y, bottom.x, bottom.y);
+    const anger = clamp(this.angry.at(ts), 0, 1);
+    grad.addColorStop(0, mix(BODY_TOP, BODY_ANGRY, anger * 0.6));
+    grad.addColorStop(1, mix(BODY_BOTTOM, BODY_ANGRY, anger * 0.8));
+    ctx.fillStyle = grad;
+    ctx.fill(body);
+
+    ctx.save();
+    ctx.clip(body);
+    this.drawFace(ts, H, ud, rd, ws);
+    ctx.restore();
+  }
+
+  private drawFace(ts: number, H: Vec, ud: Vec, rd: Vec, ws: number) {
+    const { ctx } = this;
+    const lx = this.lookX.at(ts);
+    const ly = this.lookY.at(ts);
+    const phi = Math.atan2(rd.y, rd.x);
+    const down = mul(ud, -1);
+
+    // Face turns toward the gaze: it shifts and foreshortens like a ball rotating.
+    const centre = add(add(H, mul(down, 2.5 + ly * 6)), mul(rd, lx * 11 * ws));
+    const slide = this.faceSlide.at(ts);
+    const faceCentre = add(centre, mul(rd, slide));
+    const scale = this.faceScale.at(ts);
+    const alpha = clamp(this.faceAlpha.at(ts), 0, 1);
+
+    if (alpha > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(faceCentre.x, faceCentre.y);
+      ctx.rotate(phi);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, FACE_R * (1 - 0.09 * Math.abs(lx)), FACE_R * (1 - 0.05 * Math.abs(ly)), 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const happy = clamp(this.happy.at(ts), 0, 1);
+      const angry = clamp(this.angry.at(ts), 0, 1);
+
+      // Blush.
+      if (happy > 0.02) {
+        ctx.fillStyle = `rgba(255, 150, 170, ${0.45 * happy})`;
+        for (const sx of [-1, 1]) {
+          ctx.beginPath();
+          ctx.ellipse(lx * 12 + sx * 26, 13 + ly * 6, 7, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Eyes ride a little further than the face for parallax.
+      const ex = lx * 13;
+      const ey = ly * 7;
+      const spacing = 19 * (1 - 0.14 * Math.abs(lx));
+      for (const sx of [-1, 1]) this.drawEye(ex + sx * spacing, ey, sx, happy, angry, this.blink.at(ts));
+      ctx.restore();
+    }
+
+    const pAlpha = clamp(this.photoAlpha.at(ts), 0, 1);
+    if (this.photo && pAlpha > 0.01) {
+      const pc = add(centre, mul(rd, this.photoSlide.at(ts)));
+      ctx.save();
+      ctx.globalAlpha = pAlpha;
+      ctx.translate(pc.x, pc.y);
+      ctx.rotate(phi);
+      ctx.beginPath();
+      ctx.arc(0, 0, FACE_R, 0, Math.PI * 2);
+      ctx.clip();
+      const img = this.photo;
+      const s = Math.max((FACE_R * 2) / img.naturalWidth, (FACE_R * 2) / img.naturalHeight);
+      const w = img.naturalWidth * s;
+      const h = img.naturalHeight * s;
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    }
+  }
+
+  /** One shape morphing between round, happy (flat bottom) and angry (flat top, slanted). */
+  private drawEye(x: number, y: number, side: number, happy: number, angry: number, blink: number) {
+    const { ctx } = this;
+    const w = 12;
+    const h = (12 - 2 * Math.max(happy, angry)) * clamp(blink, 0.08, 1.1);
+    const topR = 6 * (1 - angry);
+    const botR = 6 * (1 - happy);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(side * -0.26 * angry);
+    ctx.fillStyle = EYE;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2, -h / 2, w, h, [
+      Math.min(topR, h / 2),
+      Math.min(topR, h / 2),
+      Math.min(botR, h / 2),
+      Math.min(botR, h / 2),
+    ]);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  private drawSymbols(ts: number) {
+    const { ctx } = this;
+    const time = (this.ticks + ts) * TICK;
+    ctx.strokeStyle = SYMBOL;
+    ctx.lineCap = "round";
+    this.symbols.forEach((s) => {
+      // Same 4s shine as the CSS original, each mark on its own phase.
+      const alpha = 0.35 + 0.35 * Math.cos((time / 4) * Math.PI * 2 + s.phase);
+      if (alpha < 0.01) return;
+      const p = s.body.at(ts);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate((this.ticks + ts) * s.spin + (p.x - s.home.x) * 0.02);
+      ctx.beginPath();
+      if (s.kind === "o") {
+        ctx.lineWidth = 3;
+        ctx.arc(0, 0, (s.size - 3) / 2, 0, Math.PI * 2);
+      } else {
+        ctx.lineWidth = 4;
+        const a = s.kind === "x" ? Math.PI / 4 : 0;
+        for (const angle of [a, a + Math.PI / 2]) {
+          const d = v(Math.cos(angle) * 4, Math.sin(angle) * 4);
+          ctx.moveTo(-d.x, -d.y);
+          ctx.lineTo(d.x, d.y);
+        }
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+}
+
+function mix(a: string, b: string, t: number) {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ch = (shift: number) => Math.round(((pa >> shift) & 255) * (1 - t) + ((pb >> shift) & 255) * t);
+  return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`;
+}
