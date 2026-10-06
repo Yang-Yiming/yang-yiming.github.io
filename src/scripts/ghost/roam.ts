@@ -216,7 +216,8 @@ export function startRoam(ghost: Ghost, canvas: HTMLCanvasElement, from: Vec, on
   window.addEventListener("pointercancel", onUp);
   window.addEventListener("resize", measure);
 
-  return () => {
+  // Fly back to the hero, fade out there, and only then hand the canvas back to the hero layout.
+  return (done: () => void) => {
     onUp();
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerdown", onDown, true);
@@ -224,7 +225,34 @@ export function startRoam(ghost: Ghost, canvas: HTMLCanvasElement, from: Vec, on
     window.removeEventListener("pointercancel", onUp);
     window.removeEventListener("resize", measure);
     setCursor("");
-    canvas.style.opacity = "";
-    ghost.leaveRoam();
+
+    const hero = canvas.closest<HTMLElement>("[data-ghost]");
+    const since = ghost.now;
+    let landedAt = 0;
+    ghost.director = (g) => {
+      if (landedAt) {
+        if (g.now - landedAt > 14) {
+          ghost.leaveRoam();
+          done();
+        }
+        return;
+      }
+      const rect = hero?.getBoundingClientRect();
+      const onScreen = !!rect && rect.bottom > 0 && rect.top < window.innerHeight;
+      const head = g.screenHead();
+      let arrived = g.now - since > 3 * TPS;
+      if (rect && onScreen) {
+        const target = v(rect.left + rect.width / 2, rect.top + (rect.height * 152) / 410);
+        g.aim(target.x, target.y, 0.05);
+        g.drag(0.9);
+        arrived ||= Math.hypot(target.x - head.x, target.y - head.y) < 12;
+      } else {
+        arrived = true; // hero is scrolled away, there is nowhere to fly to
+      }
+      if (arrived) {
+        landedAt = g.now;
+        canvas.style.opacity = "0";
+      }
+    };
   };
 }

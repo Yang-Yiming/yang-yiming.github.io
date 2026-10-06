@@ -42,7 +42,8 @@ const photos = await Promise.all(
 
     let roaming = false;
     let visible = true;
-    let stopRoam: (() => void) | null = null;
+    let stopRoam: ((done: () => void) => void) | null = null;
+    let generation = 0;
 
     root.closest("[data-ghost-trigger]")?.addEventListener("click", () => {
       if (!roaming) trigger();
@@ -52,21 +53,34 @@ const photos = await Promise.all(
     const applyRoam = async (mode: string) => {
       const want = mode === "roam" && !reducedMotion();
       if (want === roaming) return;
+      const gen = ++generation;
       if (!want) {
         roaming = false;
-        stopRoam?.();
+        const stop = stopRoam;
         stopRoam = null;
-        delete root.dataset.roaming;
-        ghost.resize();
-        if (visible) ghost.start();
-        else ghost.stop();
+        stop?.(() => {
+          // Superseded by another switch while flying home: that path owns the canvas now.
+          if (gen !== generation) return;
+          delete root.dataset.roaming;
+          ghost.resize();
+          if (visible) ghost.start();
+          else ghost.stop();
+          // The canvas is faded out; swap happens unseen, then fade back in at the hero.
+          canvas.style.transition = "opacity 0.3s ease";
+          canvas.style.opacity = "0";
+          void canvas.offsetWidth;
+          canvas.style.opacity = "";
+          setTimeout(() => (canvas.style.transition = ""), 350);
+        });
         return;
       }
       roaming = true;
       const { startRoam } = await import("../scripts/ghost/roam");
-      if (!roaming) return;
+      if (gen !== generation) return;
       const rect = canvas.getBoundingClientRect();
       const from = { x: rect.left + rect.width / 2, y: rect.top + (rect.height * 152) / 410 };
+      canvas.style.transition = "";
+      canvas.style.opacity = "0"; // fades in on the first roam tick
       root.dataset.roaming = "";
       ghost.start();
       stopRoam = startRoam(ghost, canvas, from, trigger);
