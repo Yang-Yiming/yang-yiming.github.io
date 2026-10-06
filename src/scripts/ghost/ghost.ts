@@ -22,6 +22,7 @@ const SCENE_W = 400;
 const SCENE_H = 410;
 const TICK = 1 / 40; // Rain World runs its physics at 40 ticks per second.
 
+const ROAM_SCALE = 0.55; // on-screen size of the roaming ghost relative to the hero one
 const HOME = v(200, 152); // centre of the dome at rest
 const RADIUS = 55; // half the 110px body width
 const BODY_LEN = 68; // dome centre → hem, matches the original silhouette
@@ -83,6 +84,14 @@ export class Ghost {
   private faceScale = new Spring(1, 1, 0.12, 0.72);
   private photoSlide = new Spring(-150, -150, 0.07, 0.78);
   private photoAlpha = new Spring(0, 0, 0.15, 0.65);
+  private dizzy = new Spring(0, 0, 0.15, 0.7);
+
+  // Roam: a director (loaded only in that mode) steers the head across the whole viewport.
+  // While roaming the canvas covers the viewport and scene units are screen px / ROAM_SCALE.
+  director: ((ghost: Ghost) => void) | null = null;
+  private roam = false;
+  private roamGoal: Vec | null = null;
+  private roamPull = 0.014;
 
   private symbols: Symbol[];
   private photo: HTMLImageElement | null = null;
@@ -138,10 +147,83 @@ export class Ghost {
   /** Reduced motion always keeps the ghost calm, whatever the visitor picked. */
   setMode(mode: GhostMode, { instant = false } = {}) {
     this.mode = this.reduced ? "calm" : mode;
-    const energy = this.mode === "lively" ? 1 : 0;
+    const energy = this.mode === "calm" ? 0 : 1;
     if (instant) this.energy.snap(energy);
     else this.energy.target = energy;
     this.look.until = 0;
+  }
+
+  // ───────────────────────────── roam API ─────────────────────────────
+
+  /** Current simulation tick, 40 per second. */
+  get now() {
+    return this.ticks;
+  }
+
+  /** Dome centre in viewport px while roaming. */
+  screenHead(): Vec {
+    return mul(this.head.pos, this.scale);
+  }
+
+  /** True when a viewport point lies on the body (dome to hem), used for grabbing. */
+  hitTest(x: number, y: number) {
+    const a = this.screenHead();
+    const b = mul(this.hip.pos, this.scale);
+    const abx = b.x - a.x;
+    const aby = b.y - a.y;
+    const t = clamp(((x - a.x) * abx + (y - a.y) * aby) / (abx * abx + aby * aby || 1), 0, 1);
+    return Math.hypot(x - (a.x + abx * t), y - (a.y + aby * t)) <= RADIUS * this.scale + 4;
+  }
+
+  /** Steer the dome toward a viewport point. Higher `pull` tracks it more tightly. */
+  aim(x: number, y: number, pull = 0.02) {
+    this.roamGoal = v(x / this.scale, y / this.scale);
+    this.roamPull = pull;
+  }
+
+  /** Instant velocity change in viewport px per tick. */
+  kick(px: Vec) {
+    this.head.vel = add(this.head.vel, mul(px, 1 / this.scale));
+  }
+
+  /** Extra damping on the dome for one tick, so long chases settle instead of bouncing. */
+  drag(factor: number) {
+    this.head.vel = mul(this.head.vel, factor);
+  }
+
+  setDizzy(on: boolean) {
+    this.dizzy.target = on ? 1 : 0;
+  }
+
+  /** Lift off from the hero: keep the body's shape, put the dome at the given viewport point. */
+  enterRoam(screenHead: Vec) {
+    this.roam = true;
+    this.scale = ROAM_SCALE;
+    this.shift(sub(mul(screenHead, 1 / ROAM_SCALE), this.head.pos));
+    this.roamGoal = null;
+  }
+
+  /** Back to the hero scene: the body lands on its resting pose. */
+  leaveRoam() {
+    this.roam = false;
+    this.director = null;
+    this.roamGoal = null;
+    this.roamPull = 0.014;
+    this.dizzy.snap(0);
+    this.shift(sub(HOME, this.head.pos));
+  }
+
+  private shift(d: Vec) {
+    for (const c of [this.head, this.hip]) {
+      c.pos = add(c.pos, d);
+      c.lastPos = add(c.lastPos, d);
+    }
+    for (const col of this.skirt.cols) {
+      for (const s of col) {
+        s.pos = add(s.pos, d);
+        s.lastPos = add(s.lastPos, d);
+      }
+    }
   }
 
   setPhoto(image: HTMLImageElement | null) {
@@ -241,9 +323,9 @@ export class Ghost {
   private onPointer(event: PointerEvent) {
     const rect = this.canvas.getBoundingClientRect();
     if (!rect.width) return;
-    const p = v(((event.clientX - rect.left) / rect.width) * SCENE_W, ((event.clientY - rect.top) / rect.height) * SCENE_H);
+    const p = v((event.clientX - rect.left) / this.scale, (event.clientY - rect.top) / this.scale);
     // Only care about the pointer when it is reasonably near the scene.
-    if (p.x < -500 || p.x > SCENE_W + 300 || p.y < -250 || p.y > SCENE_H + 250) return;
+    if (!this.roam && (p.x < -500 || p.x > SCENE_W + 300 || p.y < -250 || p.y > SCENE_H + 250)) return;
     this.pointer = p;
     this.pointerSeen = this.ticks;
   }
@@ -252,12 +334,13 @@ export class Ghost {
     this.ticks++;
     const t = this.ticks;
     this.runSchedule();
+    this.director?.(this);
 
     const pointerActive = this.pointer && t - this.pointerSeen < 100;
     const motion = this.reduced ? 0.25 : 1;
     this.energy.update();
     const energy = clamp(this.energy.value, 0, 1);
-    const lively = this.mode === "lively";
+    const lively = this.mode !== "calm";
 
     // ── AI: pick where the head wants to be. ──
     // Calm is just the original's 2.4s float. Lively layers sines on top for a wander
@@ -266,15 +349,15 @@ export class Ghost {
       (Math.sin(t * 0.011) * 16 + Math.sin(t * 0.0237 + 1.3) * 8) * motion * energy,
       (Math.sin(t * 0.0171 + 0.7) * 6 * energy + Math.sin(t * BOB) * (CALM_BOB + (13 - CALM_BOB) * energy)) * motion,
     );
-    let goal = add(HOME, wander);
-    if (pointerActive && this.pointer && energy > 0.01) {
+    let goal = add(this.roamGoal ?? HOME, wander);
+    if (pointerActive && this.pointer && energy > 0.01 && !this.roamGoal) {
       // Curious: drift a little toward the cursor, but stay home.
       const pull = sub(this.pointer, HOME);
       goal = add(goal, mul(v(clamp(pull.x * 0.08, -26, 26), clamp(pull.y * 0.06, -16, 16)), energy));
     }
 
     const toGoal = sub(goal, this.head.pos);
-    const pullK = this.mood === "angry" ? 0.03 : 0.014;
+    const pullK = this.mood === "angry" ? 0.03 : this.roamGoal ? this.roamPull : 0.014;
     this.head.vel = add(this.head.vel, mul(toGoal, pullK));
 
     // ── forces ──
@@ -364,7 +447,8 @@ export class Ghost {
     this.lookX.target = look.x;
     this.lookY.target = look.y * 0.8;
     // Calm keeps the dome upright; only lively tilts it toward what it's looking at.
-    this.tilt.target = look.x * 0.1 * energy + (this.mood === "happy" ? Math.sin(t * 0.12) * 0.08 : 0);
+    this.tilt.target =
+      look.x * 0.1 * energy + (this.mood === "happy" ? Math.sin(t * 0.12) * 0.08 : 0) + this.dizzy.value * Math.sin(t * 0.25) * 0.22;
 
     // ── blinking ──
     if (t >= this.nextBlink && this.mood === "idle") {
@@ -374,11 +458,12 @@ export class Ghost {
     }
     if (this.blink.value < 0.15) this.blink.target = 1;
 
-    [this.lookX, this.lookY, this.tilt, this.blink, this.happy, this.angry].forEach((s) => s.update());
+    [this.lookX, this.lookY, this.tilt, this.blink, this.happy, this.angry, this.dizzy].forEach((s) => s.update());
     [this.faceSlide, this.faceAlpha, this.faceScale, this.photoSlide, this.photoAlpha].forEach((s) => s.update());
 
     // ── floating marks get nudged by the body passing by ──
     // Calm keeps them in place like the original, where only their shine moved.
+    if (this.roam) return;
     this.symbols.forEach((s, i) => {
       const b = s.body;
       s.angle += s.spin * energy;
@@ -397,10 +482,10 @@ export class Ghost {
 
   // ───────────────────────────── graphics ─────────────────────────────
 
-  private resize() {
+  resize() {
     const rect = this.canvas.getBoundingClientRect();
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.scale = rect.width / SCENE_W;
+    this.scale = this.roam ? ROAM_SCALE : rect.width / SCENE_W;
     this.canvas.width = Math.round(rect.width * this.dpr);
     this.canvas.height = Math.round(rect.height * this.dpr);
     if (!this.running) this.draw(1);
@@ -413,7 +498,7 @@ export class Ghost {
     const k = this.dpr * this.scale;
     ctx.setTransform(k, 0, 0, k, 0, 0);
 
-    this.drawSymbols(ts);
+    if (!this.roam) this.drawSymbols(ts);
 
     const H = this.head.at(ts);
     const P = this.hip.at(ts);
@@ -522,7 +607,9 @@ export class Ghost {
       const ex = lx * 13;
       const ey = ly * 7;
       const spacing = 19 * (1 - 0.14 * Math.abs(lx));
-      for (const sx of [-1, 1]) this.drawEye(ex + sx * spacing, ey, sx, happy, angry, this.blink.at(ts));
+      const dizzy = clamp(this.dizzy.at(ts), 0, 1);
+      const spin = (this.ticks + ts) * 0.3;
+      for (const sx of [-1, 1]) this.drawEye(ex + sx * spacing, ey, sx, happy, angry, this.blink.at(ts), dizzy, spin * -sx);
       ctx.restore();
     }
 
@@ -546,8 +633,22 @@ export class Ghost {
   }
 
   /** One shape morphing between round, happy (flat bottom) and angry (flat top, slanted). */
-  private drawEye(x: number, y: number, side: number, happy: number, angry: number, blink: number) {
+  private drawEye(x: number, y: number, side: number, happy: number, angry: number, blink: number, dizzy: number, spin: number) {
     const { ctx } = this;
+    if (dizzy > 0.5) {
+      // Dizzy: open ring eyes that spin in opposite directions.
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(spin);
+      ctx.strokeStyle = EYE;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.arc(0, 0, 5, 0, Math.PI * 1.6);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
     const w = 12;
     const h = (12 - 2 * Math.max(happy, angry)) * clamp(blink, 0.08, 1.1);
     const topR = 6 * (1 - angry);

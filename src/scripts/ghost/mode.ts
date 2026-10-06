@@ -1,7 +1,7 @@
 // The ghost's behaviour mode, shared by the hero ghost and the switch in the Fun section.
 // Stored like the theme so a visitor's choice survives reloads.
 
-export type GhostMode = "calm" | "lively";
+export type GhostMode = "calm" | "lively" | "roam";
 
 const KEY = "ghost-mode";
 const EVENT = "ghost-mode-change";
@@ -9,7 +9,8 @@ const EVENT = "ghost-mode-change";
 export const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function readGhostMode(): GhostMode {
-  return localStorage.getItem(KEY) === "lively" ? "lively" : "calm";
+  const saved = localStorage.getItem(KEY);
+  return saved === "lively" || saved === "roam" ? saved : "calm";
 }
 
 export function writeGhostMode(mode: GhostMode) {

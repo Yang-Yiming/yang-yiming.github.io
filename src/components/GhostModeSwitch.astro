@@ -1,8 +1,9 @@
 ---
-// Calm / lively switch for the hero ghost. A radio group so a later "roam" mode is one more option.
+// Calm / lively / roam switch for the ghost.
 const options = [
   { value: "calm", label: "Calm" },
   { value: "lively", label: "Lively" },
+  { value: "roam", label: "Roam" },
 ];
 ---
 <div class="fun-item">
@@ -10,6 +11,7 @@ const options = [
   <div class="fun-item__body">
     <p class="fun-item__description">
       The ghost up top floats quietly by default. Lively lets it wander, follow your cursor and look around.
+      Roam lets it leave the hero and keep you company down the page. You can pick it up and drag it around.
       Original design by <a href="https://github.com/Fideow2" target="_blank" rel="noreferrer">Fideow</a>.
     </p>
     <fieldset class="segmented" data-ghost-mode>

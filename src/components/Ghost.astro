@@ -13,7 +13,7 @@ const photos = await Promise.all(
 
 <script>
   import { Ghost } from "../scripts/ghost/ghost";
-  import { onGhostMode, readGhostMode } from "../scripts/ghost/mode";
+  import { onGhostMode, readGhostMode, reducedMotion } from "../scripts/ghost/mode";
 
   const root = document.querySelector<HTMLElement>("[data-ghost]");
   const canvas = root?.querySelector<HTMLCanvasElement>("[data-ghost-canvas]");
@@ -40,9 +40,46 @@ const photos = await Promise.all(
       }
     };
 
-    root.closest("[data-ghost-trigger]")?.addEventListener("click", trigger);
+    let roaming = false;
+    let visible = true;
+    let stopRoam: (() => void) | null = null;
 
-    // Only simulate while visible.
-    new IntersectionObserver(([entry]) => (entry.isIntersecting ? ghost.start() : ghost.stop())).observe(root);
+    root.closest("[data-ghost-trigger]")?.addEventListener("click", () => {
+      if (!roaming) trigger();
+    });
+
+    // Roam code is fetched only when a visitor actually picks that mode.
+    const applyRoam = async (mode: string) => {
+      const want = mode === "roam" && !reducedMotion();
+      if (want === roaming) return;
+      if (!want) {
+        roaming = false;
+        stopRoam?.();
+        stopRoam = null;
+        delete root.dataset.roaming;
+        ghost.resize();
+        if (visible) ghost.start();
+        else ghost.stop();
+        return;
+      }
+      roaming = true;
+      const { startRoam } = await import("../scripts/ghost/roam");
+      if (!roaming) return;
+      const rect = canvas.getBoundingClientRect();
+      const from = { x: rect.left + rect.width / 2, y: rect.top + (rect.height * 152) / 410 };
+      root.dataset.roaming = "";
+      ghost.start();
+      stopRoam = startRoam(ghost, canvas, from, trigger);
+    };
+    onGhostMode(applyRoam);
+    applyRoam(readGhostMode());
+
+    // Only simulate while visible, unless the ghost is out roaming the page.
+    new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (roaming) return;
+      if (visible) ghost.start();
+      else ghost.stop();
+    }).observe(root);
   }
 </script>
