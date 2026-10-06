@@ -9,6 +9,8 @@ import StatList from "../components/StatList.astro";
 
 This is the final project for **STA326**: a binary image-classification competition on meteorite identification.
 
+The midterm divides the project into two phases: Phase 1 is evaluated on a clean test set, while Phase 2 is evaluated on real user data that is far noisier.
+
 <StatList
   items={[
     { label: "Training images", value: "~5,000" },
@@ -18,6 +20,6 @@ This is the final project for **STA326**: a binary image-classification competit
   ]}
 />
 
-Every dot in the chart below is one test submission: green dots mark a new best, grey dots were tried but not kept. The full methodology is documented in the [project report (PDF)](/blog/meteorite-identification/report.pdf).
+Each dot in the chart below is one test submission: green dots mark a new best score, grey dots were tried but not kept. The full methodology is in the [project report (PDF, Chinese)](/blog/meteorite-identification/report.pdf). (An English version is coming in a few days; at minimum, the methodology and findings will be published as a page on this site.)
 
 <ExperimentChart />
