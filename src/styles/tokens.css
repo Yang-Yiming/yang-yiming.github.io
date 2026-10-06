@@ -21,10 +21,10 @@
   --text-base: 0.94rem;
   --text-md: 1.06rem;
 
-  --max-width: 1200px;
+  --max-width: 1040px;
   --prose-width: 68ch;
   --nav-height: 72px;
-  --gutter: clamp(1.1rem, 3vw, 2.4rem);
+  --gutter: clamp(1.25rem, 5vw, 4rem);
   --section-gap: clamp(4rem, 8vw, 9rem);
   --transition: 180ms ease;
 }

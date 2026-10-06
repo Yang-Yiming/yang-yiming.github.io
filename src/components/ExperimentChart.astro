@@ -339,7 +339,7 @@ const initial: ExperimentChartName = "combined";
     --ec-green-dark: light-dark(#176f3b, #1f9d55);
     --ec-gray: light-dark(#a9a9a9, #5c6675);
     --ec-gray-stroke: light-dark(#8a8a8a, #7a8494);
-    --ec-width: min(1120px, calc(100vw - 2 * var(--gutter)));
+    --ec-width: min(var(--max-width), calc(100vw - 2 * var(--gutter)));
 
     width: var(--ec-width);
     /* Centre on the entry column (100cqw), not on the narrower prose column. */
