@@ -45,6 +45,15 @@
   border-bottom: 1px solid var(--line);
 }
 
+[data-view="selected"] .list-row[data-featured="false"] {
+  display: none;
+}
+
+.editorial-section > .segmented {
+  justify-self: start;
+  margin-top: -1.5rem;
+}
+
 .list-row {
   position: relative;
   display: grid;

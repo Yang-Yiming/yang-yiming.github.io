@@ -4,9 +4,11 @@ import { entryHref, entryLabel, getEntries, type EntryCollection } from "../entr
 
 interface Props {
   collection: EntryCollection;
+  toggleable?: boolean;
 }
 
-const entries = await getEntries(Astro.props.collection);
+const { collection, toggleable = false } = Astro.props;
+const entries = await getEntries(collection);
 ---
 {entries.length > 0 && (
   <div class="section-list">
@@ -17,6 +19,7 @@ const entries = await getEntries(Astro.props.collection);
         title={entry.data.title}
         description={entry.data.summary}
         external={Boolean(entry.data.external)}
+        featured={toggleable ? entry.data.featured : undefined}
       />
     ))}
   </div>

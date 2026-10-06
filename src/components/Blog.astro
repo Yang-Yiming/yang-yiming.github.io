@@ -1,10 +1,34 @@
 ---
 import SectionHeader from "./SectionHeader.astro";
 import EntryList from "./EntryList.astro";
+
+const views = [
+  { value: "selected", label: "Selected" },
+  { value: "all", label: "All" },
+];
 ---
-<section class="editorial-section section-frame" id="blog">
+<section class="editorial-section section-frame" id="blog" data-view="selected" data-blog-view>
   <SectionHeader id="blog" title="Blog">
     <p>Writing that sits between documentation and reflection. Course projects, notes, and anything else worth putting into words.</p>
   </SectionHeader>
-  <EntryList collection="blog" />
+  <fieldset class="segmented segmented--inline">
+    <legend class="visually-hidden">Blog posts to show</legend>
+    {
+      views.map(({ value, label }) => (
+        <label class="segmented__option">
+          <input type="radio" name="blog-view" value={value} checked={value === "selected"} />
+          <span>{label}</span>
+        </label>
+      ))
+    }
+  </fieldset>
+  <EntryList collection="blog" toggleable />
 </section>
+
+<script>
+  const section = document.querySelector<HTMLElement>("[data-blog-view]");
+  section?.addEventListener("change", (event) => {
+    const input = event.target as HTMLInputElement;
+    if (input.name === "blog-view") section.dataset.view = input.value;
+  });
+</script>
