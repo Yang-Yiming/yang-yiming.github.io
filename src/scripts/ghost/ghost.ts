@@ -61,6 +61,9 @@ export class Ghost {
   private head = new Chunk(HOME, 0.6);
   private hip = new Chunk(add(HOME, v(0, BODY_LEN)), 0.4);
   private skirt = new Cloth(LOBES.map((x) => add(HOME, v(x, BODY_LEN))), 3, 5.5, [0.16, 0.09, 0.05]);
+  // Reused every tick for the skirt's attachment points and rest directions.
+  private roots = LOBES.map(() => v());
+  private rests = LOBES.map(() => v());
 
   // Expression state, all springs so every change eases and overshoots a little.
   private lookX = new Spring(0, 0, 0.12, 0.72);
@@ -288,14 +291,25 @@ export class Ghost {
     const ws = this.widthScale(dist(this.head.pos, this.hip.pos));
     const wave = this.mood === "happy" ? 0.4 : 0.08;
     const waveSpeed = this.mood === "happy" ? 0.24 : 0.07;
-    const roots = LOBES.map((x) => add(add(this.hip.pos, mul(right, x * ws)), mul(axis, 4)));
-    const rests = LOBES.map((x) => norm(add(mul(axis, -1), mul(right, x / 400))));
+    const { roots, rests } = this;
+    const hip = this.hip.pos;
+    for (let i = 0; i < LOBE_COUNT; i++) {
+      const x = LOBES[i];
+      roots[i].x = hip.x + right.x * (x * ws) + axis.x * 4;
+      roots[i].y = hip.y + right.y * (x * ws) + axis.y * 4;
+      const rx = -axis.x + right.x * (x / 400);
+      const ry = -axis.y + right.y * (x / 400);
+      const l = Math.sqrt(rx * rx + ry * ry);
+      rests[i].x = l < 1e-6 ? 0 : rx / l;
+      rests[i].y = l < 1e-6 ? 1 : ry / l;
+    }
     // Cloth trails behind the body, so motion itself makes it flutter.
     const drag = v(this.hip.vel.x * -0.06, this.hip.vel.y * -0.035);
     this.skirt.update(roots, rests, 0.84, 0.22, (seg, c, j) => {
       // One slow wave rolling across the whole hem, stronger toward the edge.
       const ripple = Math.sin(t * waveSpeed - c * 0.7) * wave * (j + 1) * 0.3;
-      seg.vel = add(seg.vel, add(mul(right, ripple), mul(drag, j + 1)));
+      seg.vel.x += right.x * ripple + drag.x * (j + 1);
+      seg.vel.y += right.y * ripple + drag.y * (j + 1);
     });
 
     // ── gaze ──

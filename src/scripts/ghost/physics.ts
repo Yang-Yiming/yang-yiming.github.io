@@ -1,6 +1,7 @@
 // Tiny Rain World–style physics kit.
 // Objects keep `pos`, `lastPos` and `vel`; the simulation runs at a fixed tick and
 // rendering interpolates lastPos → pos with a `timeStacker` in [0, 1).
+// The hot paths below mutate vectors in place; the pure helpers are for one-off maths.
 
 export type Vec = { x: number; y: number };
 
@@ -8,8 +9,13 @@ export const v = (x = 0, y = 0): Vec => ({ x, y });
 export const add = (a: Vec, b: Vec): Vec => v(a.x + b.x, a.y + b.y);
 export const sub = (a: Vec, b: Vec): Vec => v(a.x - b.x, a.y - b.y);
 export const mul = (a: Vec, s: number): Vec => v(a.x * s, a.y * s);
-export const len = (a: Vec) => Math.hypot(a.x, a.y);
-export const dist = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.y - b.y);
+export const len = (a: Vec) => Math.sqrt(a.x * a.x + a.y * a.y);
+// sqrt rather than Math.hypot: hypot is noticeably slower in V8 and allocates.
+export const dist = (a: Vec, b: Vec) => {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+};
 export const lerp = (a: Vec, b: Vec, t: number): Vec => v(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
 export const norm = (a: Vec): Vec => {
   const l = len(a);
@@ -32,9 +38,13 @@ export class Chunk {
   }
 
   update(airFriction: number) {
-    this.lastPos = { ...this.pos };
-    this.vel = mul(this.vel, airFriction);
-    this.pos = add(this.pos, this.vel);
+    const { pos, lastPos, vel } = this;
+    lastPos.x = pos.x;
+    lastPos.y = pos.y;
+    vel.x *= airFriction;
+    vel.y *= airFriction;
+    pos.x += vel.x;
+    pos.y += vel.y;
   }
 
   at(t: number) {
@@ -50,15 +60,21 @@ export class Chunk {
 export function connect(a: Chunk, b: Chunk, target: number, elasticity: number) {
   const d = dist(a.pos, b.pos);
   if (d < 1e-6) return;
-  const dir = mul(sub(a.pos, b.pos), 1 / d);
+  const inv = 1 / d;
+  const dx = (a.pos.x - b.pos.x) * inv;
+  const dy = (a.pos.y - b.pos.y) * inv;
   const err = (d - target) * elasticity;
   const aShare = b.mass / (a.mass + b.mass);
-  const da = mul(dir, -err * aShare);
-  const db = mul(dir, err * (1 - aShare));
-  a.pos = add(a.pos, da);
-  a.vel = add(a.vel, da);
-  b.pos = add(b.pos, db);
-  b.vel = add(b.vel, db);
+  const ka = -err * aShare;
+  const kb = err * (1 - aShare);
+  a.pos.x += dx * ka;
+  a.pos.y += dy * ka;
+  a.vel.x += dx * ka;
+  a.vel.y += dy * ka;
+  b.pos.x += dx * kb;
+  b.pos.y += dy * kb;
+  b.vel.x += dx * kb;
+  b.vel.y += dy * kb;
 }
 
 export type Segment = { pos: Vec; lastPos: Vec; vel: Vec };
@@ -84,28 +100,35 @@ export class Cloth {
     gravity: number,
     push: (seg: Segment, col: number, row: number) => void,
   ) {
-    this.cols.forEach((col, c) =>
-      col.forEach((s, i) => {
-        s.lastPos = { ...s.pos };
-        s.vel = mul(s.vel, friction);
+    const { cols, rows, segLen } = this;
+    for (let c = 0; c < cols.length; c++) {
+      const root = roots[c];
+      const dir = restDirs[c];
+      for (let i = 0; i < rows; i++) {
+        const s = cols[c][i];
+        s.lastPos.x = s.pos.x;
+        s.lastPos.y = s.pos.y;
+        s.vel.x *= friction;
+        s.vel.y *= friction;
         s.vel.y += gravity;
         // Pull toward the rest pose so the sheet keeps its shape but still lags and sways.
-        const rest = add(roots[c], mul(restDirs[c], this.segLen * (i + 1)));
-        s.vel = add(s.vel, mul(sub(rest, s.pos), this.stiffness[i] ?? 0));
+        const reach = segLen * (i + 1);
+        const k = this.stiffness[i] ?? 0;
+        s.vel.x += (root.x + dir.x * reach - s.pos.x) * k;
+        s.vel.y += (root.y + dir.y * reach - s.pos.y) * k;
         push(s, c, i);
-        s.pos = add(s.pos, s.vel);
-      }),
-    );
+        s.pos.x += s.vel.x;
+        s.pos.y += s.vel.y;
+      }
+    }
 
     for (let iter = 0; iter < 3; iter++) {
       // Vertical threads, root outward. Each segment also nudges its parent a little.
-      this.cols.forEach((col, c) =>
-        col.forEach((s, i) => {
-          const prev = i === 0 ? null : col[i - 1];
-          const parentShare = prev ? 0.25 : 0;
-          this.relax(prev ? prev.pos : roots[c], s, this.segLen, parentShare, prev);
-        }),
-      );
+      for (let c = 0; c < cols.length; c++) {
+        const col = cols[c];
+        this.relax(roots[c], col[0], segLen, 0, null);
+        for (let i = 1; i < rows; i++) this.relax(col[i - 1].pos, col[i], segLen, 0.25, col[i - 1]);
+      }
       // Horizontal threads keep neighbouring columns moving together.
       for (let c = 1; c < this.cols.length; c++) {
         const spacing = dist(roots[c - 1], roots[c]);
@@ -117,15 +140,22 @@ export class Cloth {
   private relax(anchor: Vec, s: Segment, target: number, parentShare: number, parent: Segment | null, elasticity = 1) {
     const d = dist(s.pos, anchor);
     if (d < 1e-6) return;
-    const dir = mul(sub(s.pos, anchor), 1 / d);
+    // Read the anchor before writing anything: it may be the parent's own pos.
+    const inv = 1 / d;
+    const dx = (s.pos.x - anchor.x) * inv;
+    const dy = (s.pos.y - anchor.y) * inv;
     const err = (d - target) * elasticity;
-    const ds = mul(dir, -err * (1 - parentShare));
-    s.pos = add(s.pos, ds);
-    s.vel = add(s.vel, mul(ds, 0.5));
+    const ks = -err * (1 - parentShare);
+    s.pos.x += dx * ks;
+    s.pos.y += dy * ks;
+    s.vel.x += dx * ks * 0.5;
+    s.vel.y += dy * ks * 0.5;
     if (parent) {
-      const dp = mul(dir, err * parentShare);
-      parent.pos = add(parent.pos, dp);
-      parent.vel = add(parent.vel, mul(dp, 0.5));
+      const kp = err * parentShare;
+      parent.pos.x += dx * kp;
+      parent.pos.y += dy * kp;
+      parent.vel.x += dx * kp * 0.5;
+      parent.vel.y += dy * kp * 0.5;
     }
   }
 
