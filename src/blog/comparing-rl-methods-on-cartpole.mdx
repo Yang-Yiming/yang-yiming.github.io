@@ -75,14 +75,19 @@ Two tricks make $M$ accurate enough to trust.
 1. **Normalization.** CartPole is very sensitive to the scale of its state.
 Plain MSE on raw states performed badly and produced large out-of-distribution errors,
 so both the inputs and the outputs are standardized:
-   $$\hat s = \frac{s - \mu}{\sigma}$$
+
+   $$
+   \hat s = \frac{s - \mu}{\sigma}
+   $$
 
 2. **Multi-step autoregressive loss.** Predicting only one step ahead gave a model that looked fine,
 since its loss stayed tiny, but drifted when rolled out.
 So the model is trained to predict $H = 10$ steps autoregressively,
 and the loss sums the squared error over the horizon:
 
-   $$\mathcal{L} = \sum_{k=1}^{H} \left\lVert \hat s_{t+k} - s_{t+k} \right\rVert^2$$
+   $$
+   \mathcal{L} = \sum_{k=1}^{H} \left\lVert \hat s_{t+k} - s_{t+k} \right\rVert^2
+   $$
 
 The results are below. With a hidden size of 64 for $M$, the loss drops below $10^{-3}$ within about 15 epochs.
 The trained controller scores 500 in the real environment, across different random seeds.
