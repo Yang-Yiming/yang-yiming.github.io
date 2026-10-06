@@ -4,9 +4,15 @@
   container-type: inline-size;
   display: grid;
   gap: 2.75rem;
-  width: min(100%, 780px);
+  width: min(100%, 720px);
   margin: 0 auto;
   padding: calc(var(--section-gap) * 0.78) 0 6rem;
+}
+
+/* The column itself is the measure; a narrower .prose inside it left-aligns
+   and leaves the right margin wider than the left. */
+.entry-page .prose {
+  max-width: none;
 }
 
 .entry-page__header {
@@ -36,7 +42,6 @@
 }
 
 .entry-page__title {
-  max-width: 16ch;
   font-size: clamp(2.3rem, 5vw, 4.3rem);
   line-height: 0.98;
   view-transition-name: entry-title;
@@ -50,7 +55,6 @@
 }
 
 .entry-page__summary {
-  max-width: 58ch;
   margin: 0;
   color: var(--text-soft);
   font-family: var(--font-serif-stack);
@@ -61,9 +65,5 @@
 @media (max-width: 640px) {
   .entry-page {
     padding-bottom: 4rem;
-  }
-
-  .entry-page__title {
-    max-width: 100%;
   }
 }
