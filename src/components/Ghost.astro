@@ -13,12 +13,15 @@ const photos = await Promise.all(
 
 <script>
   import { Ghost } from "../scripts/ghost/ghost";
+  import { onGhostMode, readGhostMode } from "../scripts/ghost/mode";
 
   const root = document.querySelector<HTMLElement>("[data-ghost]");
   const canvas = root?.querySelector<HTMLCanvasElement>("[data-ghost-canvas]");
 
   if (root && canvas) {
     const ghost = new Ghost(canvas);
+    ghost.setMode(readGhostMode(), { instant: true });
+    onGhostMode((mode) => ghost.setMode(mode));
     const photos: string[] = JSON.parse(root.dataset.photos ?? "[]");
     const preloaded = photos.map((src) => Object.assign(new Image(), { src }));
     let lastWasHappy: boolean | null = null;

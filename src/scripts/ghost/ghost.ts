@@ -15,6 +15,7 @@ import {
   v,
   type Vec,
 } from "./physics";
+import type { GhostMode } from "./mode";
 
 // Everything is laid out in the original 400×410 scene units and scaled on draw.
 const SCENE_W = 400;
@@ -26,6 +27,7 @@ const RADIUS = 55; // half the 110px body width
 const BODY_LEN = 68; // dome centre → hem, matches the original silhouette
 const FACE_R = 42.5;
 const BOB = (Math.PI * 2) / 96; // 2.4s float cycle, same as the original keyframes
+const SWAY = (Math.PI * 2) / 200; // 5s side-to-side look, the original's face/eye sway
 const STRETCH = 6; // how much the body breathes along its length; 0 keeps it rigid
 const LEAN = 0.08; // how far the hem trails sideways behind the dome
 // Hem scallops. 5 matches the current look, 4 gives slightly wider, softer lobes.
@@ -50,6 +52,7 @@ type Symbol = {
   size: number;
   phase: number;
   spin: number;
+  angle: number; // accumulated spin, so pausing the spin when calm doesn't make it jump
   body: Chunk;
 };
 
@@ -91,6 +94,11 @@ export class Ghost {
   private pointerSeen = -Infinity;
   private reduced: boolean;
 
+  // Calm repeats the original's simple loops; lively adds wander, curiosity and glances.
+  // `energy` eases between the two so switching never jolts the body.
+  private mode: GhostMode = "calm";
+  private energy = new Spring(0, 0, 0.02, 0.85);
+
   private running = false;
   private raf = 0;
   private lastTime = 0;
@@ -106,6 +114,7 @@ export class Ghost {
       size,
       phase: rand(0, Math.PI * 2),
       spin: rand(-0.004, 0.004),
+      angle: 0,
       body: new Chunk(v(x, y), 1),
     });
     // Same six marks as the original, positions converted to scene units.
@@ -121,6 +130,15 @@ export class Ghost {
     new ResizeObserver(() => this.resize()).observe(canvas);
     this.resize();
     window.addEventListener("pointermove", (event) => this.onPointer(event), { passive: true });
+  }
+
+  /** Reduced motion always keeps the ghost calm, whatever the visitor picked. */
+  setMode(mode: GhostMode, { instant = false } = {}) {
+    this.mode = this.reduced ? "calm" : mode;
+    const energy = this.mode === "lively" ? 1 : 0;
+    if (instant) this.energy.snap(energy);
+    else this.energy.target = energy;
+    this.look.until = 0;
   }
 
   setPhoto(image: HTMLImageElement | null) {
@@ -233,19 +251,23 @@ export class Ghost {
     this.runSchedule();
 
     const pointerActive = this.pointer && t - this.pointerSeen < 100;
-    const calm = this.reduced ? 0.25 : 1;
+    const motion = this.reduced ? 0.25 : 1;
+    this.energy.update();
+    const energy = clamp(this.energy.value, 0, 1);
+    const lively = this.mode === "lively";
 
     // ── AI: pick where the head wants to be. ──
-    // Layered sines make a wander that never visibly repeats.
+    // Calm is just the original's 2.4s float. Lively layers sines on top for a wander
+    // that never visibly repeats.
     const wander = v(
-      (Math.sin(t * 0.011) * 16 + Math.sin(t * 0.0237 + 1.3) * 8) * calm,
-      (Math.sin(t * 0.0171 + 0.7) * 6 + Math.sin(t * BOB) * 13) * calm,
+      (Math.sin(t * 0.011) * 16 + Math.sin(t * 0.0237 + 1.3) * 8) * motion * energy,
+      (Math.sin(t * 0.0171 + 0.7) * 6 * energy + Math.sin(t * BOB) * 13) * motion,
     );
     let goal = add(HOME, wander);
-    if (pointerActive && this.pointer) {
+    if (pointerActive && this.pointer && energy > 0.01) {
       // Curious: drift a little toward the cursor, but stay home.
       const pull = sub(this.pointer, HOME);
-      goal = add(goal, v(clamp(pull.x * 0.08, -26, 26), clamp(pull.y * 0.06, -16, 16)));
+      goal = add(goal, mul(v(clamp(pull.x * 0.08, -26, 26), clamp(pull.y * 0.06, -16, 16)), energy));
     }
 
     const toGoal = sub(goal, this.head.pos);
@@ -260,12 +282,12 @@ export class Ghost {
     if (this.mood === "angry" && this.angry.target > 0) {
       // Shiver: fast alternating kicks plus noise, like a furious little vibration.
       const dir = t % 4 < 2 ? 1 : -1;
-      this.head.vel.x += dir * 2.2 * calm + rand(-0.6, 0.6);
-      this.head.vel.y += rand(-0.8, 0.8) * calm;
+      this.head.vel.x += dir * 2.2 * motion + rand(-0.6, 0.6);
+      this.head.vel.y += rand(-0.8, 0.8) * motion;
     }
 
     // Startle when the cursor whips past the face.
-    if (pointerActive && this.pointer && this.lastPointer) {
+    if (lively && pointerActive && this.pointer && this.lastPointer) {
       const speed = dist(this.pointer, this.lastPointer);
       const away = sub(this.head.pos, this.pointer);
       if (speed > 18 && len(away) < 70) {
@@ -282,14 +304,15 @@ export class Ghost {
     this.hip.update(0.88);
     // Breathing: longer while rising, shorter while sinking, like the original's offset bob.
     // A soft link lets the hem lag behind the dome too, so the length also follows the motion.
-    const breath = -Math.cos(t * BOB) * STRETCH * calm;
+    const breath = -Math.cos(t * BOB) * STRETCH * motion;
     for (let i = 0; i < 2; i++) connect(this.head, this.hip, BODY_LEN - 4 + breath, 0.1);
 
     // ── skirt: a small cloth sheet hanging from the hem ──
     const axis = norm(sub(this.head.pos, this.hip.pos)); // points "up" along the body
     const right = v(-axis.y, axis.x);
     const ws = this.widthScale(dist(this.head.pos, this.hip.pos));
-    const wave = this.mood === "happy" ? 0.4 : 0.08;
+    // When calm the hem barely ripples on its own; it mostly just follows the float.
+    const wave = this.mood === "happy" ? 0.4 : 0.02 + 0.06 * energy;
     const waveSpeed = this.mood === "happy" ? 0.24 : 0.07;
     const { roots, rests } = this;
     const hip = this.hip.pos;
@@ -313,27 +336,37 @@ export class Ghost {
     });
 
     // ── gaze ──
-    if (pointerActive && this.pointer) {
-      this.look.target = this.pointer;
-    } else if (t >= this.look.until) {
-      // Idle glances: mostly ahead, sometimes at the page text on the left, sometimes around.
-      const r = Math.random();
-      this.look.target =
-        r < 0.35 ? add(this.head.pos, v(0, 30)) : r < 0.6 ? v(-260, 120) : add(this.head.pos, v(rand(-200, 200), rand(-80, 120)));
-      this.look.until = t + Math.round(rand(50, 160));
+    // Lively follows the cursor anywhere and glances around on its own. Calm only looks at
+    // a cursor that is actually over the ghost; otherwise it repeats the original's slow sway.
+    const p = this.pointer;
+    const pointerNear = pointerActive && p && p.x > 0 && p.x < SCENE_W && p.y > 0 && p.y < SCENE_H;
+    let look: Vec;
+    if (lively || pointerNear) {
+      if (pointerActive && p) {
+        this.look.target = p;
+      } else if (t >= this.look.until) {
+        // Idle glances: mostly ahead, sometimes at the page text on the left, sometimes around.
+        const r = Math.random();
+        this.look.target =
+          r < 0.35 ? add(this.head.pos, v(0, 30)) : r < 0.6 ? v(-260, 120) : add(this.head.pos, v(rand(-200, 200), rand(-80, 120)));
+        this.look.until = t + Math.round(rand(50, 160));
+      }
+      look = sub(this.look.target, this.head.pos);
+      const reach = clamp(len(look) / 140, 0, 1);
+      look = mul(norm(look), reach);
+    } else {
+      look = v(-Math.cos(t * SWAY) * 0.9 * motion, 0.1);
     }
-    let look = sub(this.look.target, this.head.pos);
-    const reach = clamp(len(look) / 140, 0, 1);
-    look = mul(norm(look), reach);
     if (this.mood === "angry" && this.angry.target > 0) look = v(t % 6 < 3 ? -1 : 1, 0.15);
     this.lookX.target = look.x;
     this.lookY.target = look.y * 0.8;
-    this.tilt.target = look.x * 0.1 + (this.mood === "happy" ? Math.sin(t * 0.12) * 0.08 : 0);
+    this.tilt.target = look.x * 0.1 * (0.3 + 0.7 * energy) + (this.mood === "happy" ? Math.sin(t * 0.12) * 0.08 : 0);
 
     // ── blinking ──
     if (t >= this.nextBlink && this.mood === "idle") {
       this.blink.target = 0.05;
-      this.nextBlink = t + Math.round(Math.random() < 0.2 ? 8 : rand(90, 220)); // sometimes a double blink
+      // Lively blinks often, sometimes twice in a row; calm only every 6–10s.
+      this.nextBlink = t + Math.round(lively ? (Math.random() < 0.2 ? 8 : rand(90, 220)) : rand(240, 400));
     }
     if (this.blink.value < 0.15) this.blink.target = 1;
 
@@ -341,9 +374,11 @@ export class Ghost {
     [this.faceSlide, this.faceAlpha, this.faceScale, this.photoSlide, this.photoAlpha].forEach((s) => s.update());
 
     // ── floating marks get nudged by the body passing by ──
+    // Calm keeps them in place like the original, where only their shine moved.
     this.symbols.forEach((s, i) => {
       const b = s.body;
-      const drift = v(Math.sin(t * 0.02 + i * 2) * 4, Math.cos(t * 0.017 + i) * 5);
+      s.angle += s.spin * energy;
+      const drift = v(Math.sin(t * 0.02 + i * 2) * 4 * energy, Math.cos(t * 0.017 + i) * 5 * energy);
       b.vel = add(b.vel, mul(sub(add(s.home, drift), b.pos), 0.01));
       const away = sub(b.pos, this.head.pos);
       const d = len(away);
@@ -541,7 +576,7 @@ export class Ghost {
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.translate(p.x, p.y);
-      ctx.rotate((this.ticks + ts) * s.spin + (p.x - s.home.x) * 0.02);
+      ctx.rotate(s.angle + (p.x - s.home.x) * 0.02);
       ctx.beginPath();
       if (s.kind === "o") {
         ctx.lineWidth = 3;

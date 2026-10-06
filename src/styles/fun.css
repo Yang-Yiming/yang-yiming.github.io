@@ -1,0 +1,115 @@
+/* Rows in the Fun section share the list-row grid but hold controls instead of links. */
+.fun-item {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  column-gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: baseline;
+  padding: 1.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.fun-item__meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+}
+
+.fun-item__body {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+}
+
+.fun-item__description,
+.fun-item__note {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--text-soft);
+  font-family: var(--font-serif-stack);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+.fun-item__description a {
+  color: var(--accent);
+}
+
+.fun-item__note {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.segmented {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+}
+
+.segmented__option {
+  position: relative;
+  cursor: pointer;
+}
+
+.segmented__option + .segmented__option {
+  border-left: 1px solid var(--line-strong);
+}
+
+/* The radio stays in the accessibility tree; the label text is the visible control. */
+.segmented__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.segmented__option span {
+  display: block;
+  padding: 0.45rem 1rem;
+  color: var(--text-soft);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+
+.segmented__option:hover span {
+  color: var(--text);
+}
+
+.segmented__option input:checked + span {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.segmented__option input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.segmented:disabled {
+  opacity: 0.55;
+}
+
+.segmented:disabled .segmented__option {
+  cursor: not-allowed;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .fun-item {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.5rem;
+  }
+}

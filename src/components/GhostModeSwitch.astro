@@ -1,0 +1,45 @@
+---
+// Calm / lively switch for the hero ghost. A radio group so a later "roam" mode is one more option.
+const options = [
+  { value: "calm", label: "Calm" },
+  { value: "lively", label: "Lively" },
+];
+---
+<div class="fun-item">
+  <p class="fun-item__meta">Ghost</p>
+  <div class="fun-item__body">
+    <p class="fun-item__description">
+      The ghost up top floats quietly by default. Lively lets it wander, follow your cursor and look around.
+      Original design by <a href="https://github.com/Fideow2" target="_blank" rel="noreferrer">Fideow</a>.
+    </p>
+    <fieldset class="segmented" data-ghost-mode>
+      <legend class="visually-hidden">Ghost behaviour</legend>
+      {
+        options.map(({ value, label }) => (
+          <label class="segmented__option">
+            <input type="radio" name="ghost-mode" value={value} checked={value === "calm"} />
+            <span>{label}</span>
+          </label>
+        ))
+      }
+    </fieldset>
+    <p class="fun-item__note" data-ghost-mode-note hidden>Your system asks for reduced motion, so the ghost stays calm.</p>
+  </div>
+</div>
+
+<script>
+  import { readGhostMode, reducedMotion, writeGhostMode, type GhostMode } from "../scripts/ghost/mode";
+
+  const group = document.querySelector<HTMLFieldSetElement>("[data-ghost-mode]");
+  const note = document.querySelector<HTMLElement>("[data-ghost-mode-note]");
+
+  if (group) {
+    const current = reducedMotion() ? "calm" : readGhostMode();
+    group.querySelectorAll<HTMLInputElement>("input").forEach((input) => (input.checked = input.value === current));
+    if (reducedMotion()) {
+      group.disabled = true;
+      if (note) note.hidden = false;
+    }
+    group.addEventListener("change", (event) => writeGhostMode((event.target as HTMLInputElement).value as GhostMode));
+  }
+</script>
