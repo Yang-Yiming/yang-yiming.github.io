@@ -18,8 +18,12 @@ const label = NAV.find((item) => item.id === id)?.label;
       <h2 class="section-title">{title}</h2>
     </a>
   </div>
-  <div class="section-body">
-    {source && <p class="section-source-label">{source}</p>}
-    <div class="section-intro prose-inline"><slot /></div>
-  </div>
+  {(source || Astro.slots.has("default")) && (
+    <div class="section-body">
+      {source && <p class="section-source-label">{source}</p>}
+      {Astro.slots.has("default") && (
+        <div class="section-intro prose-inline"><slot /></div>
+      )}
+    </div>
+  )}
 </div>
