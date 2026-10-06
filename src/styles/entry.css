@@ -1,4 +1,7 @@
 .entry-page {
+  /* Establishes a query container so wide blocks (e.g. charts) can centre
+     themselves on the entry column with 100cqw. */
+  container-type: inline-size;
   display: grid;
   gap: 2.75rem;
   width: min(100%, 780px);
@@ -53,14 +56,6 @@
   font-family: var(--font-serif-stack);
   font-size: var(--text-md);
   line-height: 1.7;
-}
-
-.entry-page__frame {
-  display: block;
-  width: min(100vw - 2 * var(--gutter), 1120px);
-  min-height: 80vh;
-  justify-self: center;
-  border: 0;
 }
 
 @media (max-width: 640px) {

@@ -1,0 +1,55 @@
+---
+interface Props {
+  /** Label/value pairs rendered as a bordered metric row. */
+  items: { label: string; value: string }[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="stat-list">
+  {
+    items.map((item) => (
+      <li class="stat-list__item">
+        <span class="stat-list__label">{item.label}</span>
+        <span class="stat-list__value">{item.value}</span>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .stat-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.85rem;
+    margin: 1.4rem 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .stat-list__item {
+    margin: 0;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--line);
+    background: var(--bg-strong);
+  }
+
+  .stat-list__label {
+    display: block;
+    color: var(--text-muted);
+    font-family: var(--font-mono-stack);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .stat-list__value {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--text);
+    font-family: var(--font-mono-stack);
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+</style>

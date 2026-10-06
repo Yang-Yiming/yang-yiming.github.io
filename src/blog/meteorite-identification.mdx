@@ -1,0 +1,23 @@
+---
+title: Meteorite Identification
+summary: "STA326 course project: training a model to identify meteorites from ~5K training images, evaluated on 194 test images using binary F1."
+date: 2026-06-18
+---
+
+import ExperimentChart from "../components/ExperimentChart.astro";
+import StatList from "../components/StatList.astro";
+
+This is the final project for **STA326**: a binary image-classification competition on meteorite identification.
+
+<StatList
+  items={[
+    { label: "Training images", value: "~5,000" },
+    { label: "Test images", value: "194" },
+    { label: "Evaluation metric", value: "Binary F1" },
+    { label: "Best test F1", value: "0.81633" },
+  ]}
+/>
+
+Every dot in the chart below is one test submission: green dots mark a new best, grey dots were tried but not kept. The full methodology is documented in the [project report (PDF)](/blog/meteorite-identification/report.pdf).
+
+<ExperimentChart />

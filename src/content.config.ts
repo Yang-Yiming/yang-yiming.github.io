@@ -8,8 +8,6 @@ const schema = z.object({
   date: z.coerce.date(),
   // Shown instead of the formatted date in lists, e.g. "Ongoing Practice".
   label: z.string().optional(),
-  // Page embedded as an iframe below the entry body.
-  embed: z.string().optional(),
   // List row links straight here; no entry page is generated.
   external: z.url().optional(),
   draft: z.boolean().default(false),

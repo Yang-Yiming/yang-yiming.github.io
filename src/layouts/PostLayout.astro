@@ -10,7 +10,7 @@ interface Props {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
-const { title, summary, date, label, embed } = entry.data;
+const { title, summary, date, label } = entry.data;
 const section = NAV.find((item) => item.id === entry.collection)?.label;
 ---
 <BaseLayout title={title} description={summary} activeSection={entry.collection}>
@@ -23,6 +23,5 @@ const section = NAV.find((item) => item.id === entry.collection)?.label;
       <p class="entry-page__summary">{summary}</p>
     </header>
     <div class="prose"><Content /></div>
-    {embed && <iframe class="entry-page__frame" src={embed} title={title} loading="lazy" />}
   </article>
 </BaseLayout>
