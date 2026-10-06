@@ -17,15 +17,15 @@ export const NAV = [
   { id: "home", label: "Home" },
   { id: "projects", label: "Projects" },
   { id: "research", label: "Research" },
-  { id: "life", label: "Life" },
   { id: "blog", label: "Blog" },
+  { id: "life", label: "Life" },
   { id: "fun", label: "Fun!" },
 ] as const;
 
 export type SectionId = (typeof NAV)[number]["id"];
 
 // Sections listed under "Quick entry" in the hero.
-export const QUICK_LINKS: SectionId[] = ["projects", "research", "life", "blog"];
+export const QUICK_LINKS: SectionId[] = ["projects", "research", "blog", "life"];
 
 export function sectionKicker(id: SectionId) {
   const index = NAV.findIndex((item) => item.id === id);
