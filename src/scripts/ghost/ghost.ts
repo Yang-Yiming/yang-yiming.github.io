@@ -1,7 +1,7 @@
 import {
   Chunk,
   Spring,
-  Tail,
+  Cloth,
   add,
   clamp,
   connect,
@@ -25,11 +25,18 @@ const HOME = v(200, 152); // centre of the dome at rest
 const RADIUS = 55; // half the 110px body width
 const BODY_LEN = 68; // dome centre → hem, matches the original silhouette
 const FACE_R = 42.5;
-const LOBES = [44, 22, 0, -22, -44]; // skirt lobe centres, right → left
-const NOTCHES = [55, 33, 11, -11, -33, -55];
+const BOB = (Math.PI * 2) / 96; // 2.4s float cycle, same as the original keyframes
+const STRETCH = 6; // how much the body breathes along its length; 0 keeps it rigid
+const LEAN = 0.08; // how far the hem trails sideways behind the dome
+// Hem scallops. 5 matches the current look, 4 gives slightly wider, softer lobes.
+const LOBE_COUNT = 5;
+const LOBE_W = (RADIUS * 2) / LOBE_COUNT;
+const LOBES = Array.from({ length: LOBE_COUNT }, (_, i) => RADIUS - LOBE_W * (i + 0.5)); // centres, right → left
+const NOTCHES = Array.from({ length: LOBE_COUNT + 1 }, (_, i) => RADIUS - LOBE_W * i);
 
-const BODY_TOP = "#b4c1ca";
-const BODY_BOTTOM = "#a2b0bb";
+// Barely-there gradient: reads as light on fabric rather than a shaded blob.
+const BODY_TOP = "#b1bec7";
+const BODY_BOTTOM = "#a7b5bf";
 const BODY_ANGRY = "#c4a9ae";
 const EYE = "#131a24";
 const SYMBOL = "#aab8c2";
@@ -53,7 +60,7 @@ export class Ghost {
 
   private head = new Chunk(HOME, 0.6);
   private hip = new Chunk(add(HOME, v(0, BODY_LEN)), 0.4);
-  private tails = LOBES.map((x) => new Tail(add(HOME, v(x, BODY_LEN)), 3, 5.5, [0.22, 0.14, 0.09]));
+  private skirt = new Cloth(LOBES.map((x) => add(HOME, v(x, BODY_LEN))), 3, 5.5, [0.16, 0.09, 0.05]);
 
   // Expression state, all springs so every change eases and overshoots a little.
   private lookX = new Spring(0, 0, 0.12, 0.72);
@@ -229,7 +236,7 @@ export class Ghost {
     // Layered sines make a wander that never visibly repeats.
     const wander = v(
       (Math.sin(t * 0.011) * 16 + Math.sin(t * 0.0237 + 1.3) * 8) * calm,
-      (Math.sin(t * 0.0171 + 0.7) * 6 + Math.sin(t * (Math.PI * 2) / 96) * 13) * calm,
+      (Math.sin(t * 0.0171 + 0.7) * 6 + Math.sin(t * BOB) * 13) * calm,
     );
     let goal = add(HOME, wander);
     if (pointerActive && this.pointer) {
@@ -265,25 +272,30 @@ export class Ghost {
     }
     this.lastPointer = this.pointer ? { ...this.pointer } : null;
 
+    // Lean into turns: the hem gets dragged against the dome's sideways motion.
+    this.hip.vel.x -= this.head.vel.x * LEAN;
+
     this.head.update(0.9);
     this.hip.update(0.88);
-    // Rest a bit short so gravity stretches it to BODY_LEN on average.
-    for (let i = 0; i < 2; i++) connect(this.head, this.hip, BODY_LEN - 4, 0.2);
+    // Breathing: longer while rising, shorter while sinking, like the original's offset bob.
+    // A soft link lets the hem lag behind the dome too, so the length also follows the motion.
+    const breath = -Math.cos(t * BOB) * STRETCH * calm;
+    for (let i = 0; i < 2; i++) connect(this.head, this.hip, BODY_LEN - 4 + breath, 0.1);
 
-    // ── skirt: five dangling chains hanging from the hem ──
+    // ── skirt: a small cloth sheet hanging from the hem ──
     const axis = norm(sub(this.head.pos, this.hip.pos)); // points "up" along the body
     const right = v(-axis.y, axis.x);
     const ws = this.widthScale(dist(this.head.pos, this.hip.pos));
-    const wave = this.mood === "happy" ? 0.55 : 0.18;
-    const waveSpeed = this.mood === "happy" ? 0.3 : 0.09;
-    this.tails.forEach((tail, i) => {
-      const x = LOBES[i] * ws;
-      const root = add(add(this.hip.pos, mul(right, x)), mul(axis, 4));
-      const rest = norm(add(mul(axis, -1), mul(right, x / 300)));
-      tail.update(root, rest, 0.78, 0.25, (seg, j) => {
-        // Travelling ripple along the hem, stronger toward the tips.
-        seg.vel = add(seg.vel, mul(right, Math.sin(t * waveSpeed - i * 1.1) * wave * (j + 1) * 0.35));
-      });
+    const wave = this.mood === "happy" ? 0.4 : 0.08;
+    const waveSpeed = this.mood === "happy" ? 0.24 : 0.07;
+    const roots = LOBES.map((x) => add(add(this.hip.pos, mul(right, x * ws)), mul(axis, 4)));
+    const rests = LOBES.map((x) => norm(add(mul(axis, -1), mul(right, x / 400))));
+    // Cloth trails behind the body, so motion itself makes it flutter.
+    const drag = v(this.hip.vel.x * -0.06, this.hip.vel.y * -0.035);
+    this.skirt.update(roots, rests, 0.84, 0.22, (seg, c, j) => {
+      // One slow wave rolling across the whole hem, stronger toward the edge.
+      const ripple = Math.sin(t * waveSpeed - c * 0.7) * wave * (j + 1) * 0.3;
+      seg.vel = add(seg.vel, add(mul(right, ripple), mul(drag, j + 1)));
     });
 
     // ── gaze ──
@@ -379,16 +391,16 @@ export class Ghost {
 
     // Scalloped hem: each lobe is a cubic whose midpoint lands exactly on its tail tip.
     const notch = (x: number) => add(add(P, mul(r, x * ws)), mul(u, 1.5));
-    this.tails.forEach((tail, i) => {
+    for (let i = 0; i < LOBE_COUNT; i++) {
       const a = i === 0 ? hemR : notch(NOTCHES[i]);
-      const b = i === this.tails.length - 1 ? hemL : notch(NOTCHES[i + 1]);
-      const tip = tail.at(tail.segs.length - 1, ts);
+      const b = i === LOBE_COUNT - 1 ? hemL : notch(NOTCHES[i + 1]);
+      const tip = this.skirt.at(i, this.skirt.rows - 1, ts);
       const bulge = mul(sub(tip, lerp(a, b, 0.5)), 4 / 3);
       const p1 = add(a, bulge);
       const p2 = add(b, bulge);
       if (i === 0) body.lineTo(a.x, a.y);
       body.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, b.x, b.y);
-    });
+    }
 
     c1 = add(hemL, mul(u, side));
     c2 = sub(domeL, mul(ud, side));
@@ -396,12 +408,16 @@ export class Ghost {
     body.closePath();
 
     // Body fill: soft top-to-hem gradient, flushed pink while angry.
+    // The last few pixels below the hem line fade a little, like thin fabric.
     const top = sub(H, mul(ud, ry));
-    const bottom = add(P, mul(u, -16));
+    const bottom = add(P, mul(u, -18));
     const grad = ctx.createLinearGradient(top.x, top.y, bottom.x, bottom.y);
     const anger = clamp(this.angry.at(ts), 0, 1);
+    const hemAt = clamp(dist(top, P) / dist(top, bottom), 0, 1);
+    const hemColor = mix(BODY_BOTTOM, BODY_ANGRY, anger * 0.8);
     grad.addColorStop(0, mix(BODY_TOP, BODY_ANGRY, anger * 0.6));
-    grad.addColorStop(1, mix(BODY_BOTTOM, BODY_ANGRY, anger * 0.8));
+    grad.addColorStop(hemAt, hemColor);
+    grad.addColorStop(1, hemColor.replace("rgb(", "rgba(").replace(")", ", 0.72)"));
     ctx.fillStyle = grad;
     ctx.fill(body);
 
