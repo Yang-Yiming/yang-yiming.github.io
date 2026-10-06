@@ -6,28 +6,31 @@
   cursor: pointer;
 }
 
-/* Roam: the canvas covers the viewport and never intercepts input; the wrapper keeps the hero layout. */
-.hero-ghost[data-roaming] {
-  width: min(400px, 80vw);
-  aspect-ratio: 400 / 410;
-  cursor: auto;
-}
-
-.hero-ghost[data-roaming] .scene {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  aspect-ratio: auto;
-  pointer-events: none;
-  z-index: 5;
-  transition: opacity 0.3s ease;
-}
-
 /* Canvas keeps the original scene box; the simulation draws in 400×410 units. */
 .hero-ghost .scene {
   display: block;
   width: min(400px, 80vw);
   aspect-ratio: 400 / 410;
   height: auto;
+  transition: opacity 0.3s ease;
+}
+
+/* While the roaming ghost is out, the hero one fades away and the box stays put. */
+.hero-ghost[data-roaming] {
+  cursor: auto;
+}
+
+.hero-ghost[data-roaming] .scene {
+  opacity: 0;
+}
+
+/* Roam: one fullscreen canvas per page, never intercepting input. */
+.roam-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 0.3s ease;
 }

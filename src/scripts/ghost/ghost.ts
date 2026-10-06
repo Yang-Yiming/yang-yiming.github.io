@@ -111,6 +111,9 @@ export class Ghost {
   private mode: GhostMode = "calm";
   private energy = new Spring(0, 0, 0.02, 0.85);
 
+  private observer: ResizeObserver;
+  private onPointerMove = (event: PointerEvent) => this.onPointer(event);
+
   private running = false;
   private raf = 0;
   private lastTime = 0;
@@ -139,9 +142,17 @@ export class Ghost {
       sym("+", 350, 236),
     ];
 
-    new ResizeObserver(() => this.resize()).observe(canvas);
+    this.observer = new ResizeObserver(() => this.resize());
+    this.observer.observe(canvas);
     this.resize();
-    window.addEventListener("pointermove", (event) => this.onPointer(event), { passive: true });
+    window.addEventListener("pointermove", this.onPointerMove, { passive: true });
+  }
+
+  /** Stop simulating and release every listener; the instance must not be used afterwards. */
+  destroy() {
+    this.stop();
+    this.observer.disconnect();
+    window.removeEventListener("pointermove", this.onPointerMove);
   }
 
   /** Reduced motion always keeps the ghost calm, whatever the visitor picked. */
@@ -201,16 +212,6 @@ export class Ghost {
     this.scale = ROAM_SCALE;
     this.shift(sub(mul(screenHead, 1 / ROAM_SCALE), this.head.pos));
     this.roamGoal = null;
-  }
-
-  /** Back to the hero scene: the body lands on its resting pose. */
-  leaveRoam() {
-    this.roam = false;
-    this.director = null;
-    this.roamGoal = null;
-    this.roamPull = 0.014;
-    this.dizzy.snap(0);
-    this.shift(sub(HOME, this.head.pos));
   }
 
   private shift(d: Vec) {

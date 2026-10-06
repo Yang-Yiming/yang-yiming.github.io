@@ -1,99 +1,44 @@
 ---
-import { getImage } from "astro:assets";
-
-// Every image dropped into src/images/ghost/ can appear on the ghost's face.
-const modules = import.meta.glob<{ default: ImageMetadata }>("../images/ghost/*.{png,jpg,jpeg,webp,avif}", { eager: true });
-const photos = await Promise.all(
-  Object.values(modules).map(async ({ default: src }) => (await getImage({ src, width: 170, format: "webp" })).src),
-);
 ---
-<div class="hero-ghost" aria-hidden="true" data-ghost data-photos={JSON.stringify(photos)}>
+<div class="hero-ghost" aria-hidden="true" data-ghost>
   <canvas class="scene" data-ghost-canvas></canvas>
 </div>
 
 <script>
   import { Ghost } from "../scripts/ghost/ghost";
-  import { onGhostMode, readGhostMode, reducedMotion } from "../scripts/ghost/mode";
+  import { createPoker } from "../scripts/ghost/poke";
+  import { onGhostMode, readGhostMode, reducedMotion, ROAM_LANDED } from "../scripts/ghost/mode";
 
   const root = document.querySelector<HTMLElement>("[data-ghost]");
   const canvas = root?.querySelector<HTMLCanvasElement>("[data-ghost-canvas]");
 
   if (root && canvas) {
     const ghost = new Ghost(canvas);
-    ghost.setMode(readGhostMode(), { instant: true });
-    onGhostMode((mode) => ghost.setMode(mode));
-    const photos: string[] = JSON.parse(root.dataset.photos ?? "[]");
-    const preloaded = photos.map((src) => Object.assign(new Image(), { src }));
-    let lastWasHappy: boolean | null = null;
-
-    const trigger = () => {
-      if (ghost.busy) return;
-      // Bias against repeats so reactions feel varied while staying ~50/50 overall.
-      const threshold = lastWasHappy === null ? 0.5 : lastWasHappy ? 0.7 : 0.3;
-      lastWasHappy = Math.random() > threshold;
-      if (lastWasHappy) {
-        const ready = preloaded.filter((image) => image.complete && image.naturalWidth);
-        ghost.setPhoto(ready[Math.floor(Math.random() * ready.length)] ?? null);
-        ghost.playHappy();
-      } else {
-        ghost.playAngry();
-      }
-    };
-
-    let roaming = false;
+    const poke = createPoker(ghost, JSON.parse(document.body.dataset.ghostPhotos ?? "[]"));
     let visible = true;
-    let stopRoam: ((done: () => void) => void) | null = null;
-    let generation = 0;
+    let roaming = false;
 
-    root.closest("[data-ghost-trigger]")?.addEventListener("click", () => {
-      if (!roaming) trigger();
+    const sync = () => (visible && !roaming ? ghost.start() : ghost.stop());
+
+    // While the roaming ghost is out, the hero one steps aside; it fades back in once the roamer has landed.
+    const apply = (mode: string) => {
+      ghost.setMode(mode === "roam" ? "calm" : (mode as "calm" | "lively"), { instant: true });
+      roaming = mode === "roam" && !reducedMotion();
+      if (roaming) root.dataset.roaming = "";
+      sync();
+    };
+    apply(readGhostMode());
+    onGhostMode(apply);
+    document.addEventListener(ROAM_LANDED, () => {
+      if (!roaming) delete root.dataset.roaming;
     });
 
-    // Roam code is fetched only when a visitor actually picks that mode.
-    const applyRoam = async (mode: string) => {
-      const want = mode === "roam" && !reducedMotion();
-      if (want === roaming) return;
-      const gen = ++generation;
-      if (!want) {
-        roaming = false;
-        const stop = stopRoam;
-        stopRoam = null;
-        stop?.(() => {
-          // Superseded by another switch while flying home: that path owns the canvas now.
-          if (gen !== generation) return;
-          delete root.dataset.roaming;
-          ghost.resize();
-          if (visible) ghost.start();
-          else ghost.stop();
-          // The canvas is faded out; swap happens unseen, then fade back in at the hero.
-          canvas.style.transition = "opacity 0.3s ease";
-          canvas.style.opacity = "0";
-          void canvas.offsetWidth;
-          canvas.style.opacity = "";
-          setTimeout(() => (canvas.style.transition = ""), 350);
-        });
-        return;
-      }
-      roaming = true;
-      const { startRoam } = await import("../scripts/ghost/roam");
-      if (gen !== generation) return;
-      const rect = canvas.getBoundingClientRect();
-      const from = { x: rect.left + rect.width / 2, y: rect.top + (rect.height * 152) / 410 };
-      canvas.style.transition = "";
-      canvas.style.opacity = "0"; // fades in on the first roam tick
-      root.dataset.roaming = "";
-      ghost.start();
-      stopRoam = startRoam(ghost, canvas, from, trigger);
-    };
-    onGhostMode(applyRoam);
-    applyRoam(readGhostMode());
+    root.closest("[data-ghost-trigger]")?.addEventListener("click", poke);
 
-    // Only simulate while visible, unless the ghost is out roaming the page.
+    // Only simulate while visible.
     new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
-      if (roaming) return;
-      if (visible) ghost.start();
-      else ghost.stop();
+      sync();
     }).observe(root);
   }
 </script>

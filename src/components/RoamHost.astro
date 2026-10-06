@@ -1,0 +1,42 @@
+---
+// Mounts the roaming ghost on every page, but only for visitors who picked Roam.
+// Everything heavy is fetched on demand, so calm and lively visitors pay nothing.
+---
+<script>
+  import { onGhostMode, readGhostMode, reducedMotion, ROAM_LANDED } from "../scripts/ghost/mode";
+  import type { RoamHandle } from "../scripts/ghost/roam-host";
+
+  let active = false;
+  let handle: RoamHandle | null = null;
+  let departing: RoamHandle | null = null;
+  let generation = 0;
+
+  const apply = async (mode: string) => {
+    const want = mode === "roam" && !reducedMotion();
+    if (want === active) return;
+    const gen = ++generation;
+    active = want;
+
+    if (!want) {
+      const leaving = handle;
+      handle = null;
+      if (!leaving) return document.dispatchEvent(new Event(ROAM_LANDED));
+      departing = leaving;
+      leaving.leave(() => {
+        departing = null;
+        document.dispatchEvent(new Event(ROAM_LANDED));
+      });
+      return;
+    }
+
+    // Switching back on while the last ghost is still flying home: cut it so there is only one.
+    departing?.destroy();
+    departing = null;
+    const { enterRoamHost } = await import("../scripts/ghost/roam-host");
+    if (gen !== generation) return;
+    handle = enterRoamHost(JSON.parse(document.body.dataset.ghostPhotos ?? "[]"));
+  };
+
+  onGhostMode(apply);
+  apply(readGhostMode());
+</script>

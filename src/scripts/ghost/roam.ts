@@ -226,13 +226,13 @@ export function startRoam(ghost: Ghost, canvas: HTMLCanvasElement, from: Vec, on
     window.removeEventListener("resize", measure);
     setCursor("");
 
-    const hero = canvas.closest<HTMLElement>("[data-ghost]");
+    const hero = document.querySelector<HTMLElement>("[data-ghost]");
     const since = ghost.now;
     let landedAt = 0;
     ghost.director = (g) => {
       if (landedAt) {
         if (g.now - landedAt > 14) {
-          ghost.leaveRoam();
+          ghost.director = null;
           done();
         }
         return;
