@@ -29,6 +29,9 @@ const FACE_R = 42.5;
 const BOB = (Math.PI * 2) / 96; // 2.4s float cycle, same as the original keyframes
 const SWAY = (Math.PI * 2) / 200; // 5s side-to-side look, the original's face/eye sway
 const STRETCH = 6; // how much the body breathes along its length; 0 keeps it rigid
+const CALM_BOB = 5; // calm float height; lively uses 13, about the original's 20px travel
+const CALM_STRETCH = 0.5; // share of STRETCH the body breathes when calm
+const CALM_SWAY = 0.2; // calm face/eye side-to-side, as a share of full gaze (lively reaches 1)
 const LEAN = 0.08; // how far the hem trails sideways behind the dome
 // Hem scallops. 5 matches the current look, 4 gives slightly wider, softer lobes.
 const LOBE_COUNT = 5;
@@ -261,7 +264,7 @@ export class Ghost {
     // that never visibly repeats.
     const wander = v(
       (Math.sin(t * 0.011) * 16 + Math.sin(t * 0.0237 + 1.3) * 8) * motion * energy,
-      (Math.sin(t * 0.0171 + 0.7) * 6 * energy + Math.sin(t * BOB) * 13) * motion,
+      (Math.sin(t * 0.0171 + 0.7) * 6 * energy + Math.sin(t * BOB) * (CALM_BOB + (13 - CALM_BOB) * energy)) * motion,
     );
     let goal = add(HOME, wander);
     if (pointerActive && this.pointer && energy > 0.01) {
@@ -304,7 +307,7 @@ export class Ghost {
     this.hip.update(0.88);
     // Breathing: longer while rising, shorter while sinking, like the original's offset bob.
     // A soft link lets the hem lag behind the dome too, so the length also follows the motion.
-    const breath = -Math.cos(t * BOB) * STRETCH * motion;
+    const breath = -Math.cos(t * BOB) * STRETCH * (CALM_STRETCH + (1 - CALM_STRETCH) * energy) * motion;
     for (let i = 0; i < 2; i++) connect(this.head, this.hip, BODY_LEN - 4 + breath, 0.1);
 
     // ── skirt: a small cloth sheet hanging from the hem ──
@@ -355,12 +358,13 @@ export class Ghost {
       const reach = clamp(len(look) / 140, 0, 1);
       look = mul(norm(look), reach);
     } else {
-      look = v(-Math.cos(t * SWAY) * 0.9 * motion, 0.1);
+      look = v(-Math.cos(t * SWAY) * CALM_SWAY * motion, 0.1);
     }
     if (this.mood === "angry" && this.angry.target > 0) look = v(t % 6 < 3 ? -1 : 1, 0.15);
     this.lookX.target = look.x;
     this.lookY.target = look.y * 0.8;
-    this.tilt.target = look.x * 0.1 * (0.3 + 0.7 * energy) + (this.mood === "happy" ? Math.sin(t * 0.12) * 0.08 : 0);
+    // Calm keeps the dome upright; only lively tilts it toward what it's looking at.
+    this.tilt.target = look.x * 0.1 * energy + (this.mood === "happy" ? Math.sin(t * 0.12) * 0.08 : 0);
 
     // ── blinking ──
     if (t >= this.nextBlink && this.mood === "idle") {
