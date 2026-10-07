@@ -1,6 +1,6 @@
 ---
 title: Meteorite Identification
-summary: "STA326 course project: training a model to identify meteorites from ~5K training images, evaluated on 194 test images using binary F1."
+summary: "STA326 course project: a binary classifier that decides whether a photo shows a meteorite, taken from a 0.70222 baseline to 0.81633 test F1."
 date: 2026-06-18
 featured: true
 ---
@@ -8,19 +8,172 @@ featured: true
 import ExperimentChart from "../components/ExperimentChart.astro";
 import StatList from "../components/StatList.astro";
 
-This is the final project for **STA326**: a binary image-classification competition on meteorite identification.
+This is the final project for **STA326**: identify meteorites in images using binary F1 on a hidden test set.
 
-The midterm divides the project into two phases: Phase 1 is evaluated on a clean test set, while Phase 2 is evaluated on real user data that is far noisier.
+The project had two phases. Phase 1 used 511 relatively clean images; Phase 2 used 194 noisier, user-uploaded photos.
+Everything is trained and run locally, with no external LLM API used for inference or labeling.
 
 <StatList
   items={[
-    { label: "Training images", value: "~5,000" },
+    { label: "Training images", value: "5,098" },
     { label: "Test images", value: "194" },
     { label: "Evaluation metric", value: "Binary F1" },
     { label: "Best test F1", value: "0.81633" },
   ]}
 />
 
-Each dot in the chart below is one test submission: green dots mark a new best score, grey dots were tried but not kept. The full methodology is in the [project report (PDF, Chinese)](/blog/meteorite-identification/report.pdf). (An English version is coming in a few days; at minimum, the methodology and findings will be published as a page on this site.)
+## Validation leakage
+
+Our first setup used a random 8/2 train/validation split. Within about 10 epochs, validation F1 hit 0.99, while the leaderboard score was around 0.7.
+
+We initially blamed distribution shift (OOD), but that cannot explain a near-perfect score on held-out samples from the *same* data. The split contained leakage.
+
+The likely source was the background. Many photos share the same museum display, label card, ruler, or table, so a random split puts near-duplicate scenes on both sides. We used SAM to mask the rock and tested both inputs:
+
+- **Stone only (background removed):** validation F1 dropped to about 0.70, and the leaderboard score dropped to about 0.50.
+- **Background only (stone masked out):** validation F1 went back above 0.9.
+
+The background-only model still scored above 0.9, showing that validation was measuring scene memorization.
+
+<div class="figure-grid">
+  <figure>
+    <img src="/blog/meteorite-identification/leak-subject-val.png" alt="Validation F1 when training on SAM-masked stone only" width="1000" height="769" loading="lazy" />
+    <figcaption>Stone only: validation F1 tops out around 0.70.</figcaption>
+  </figure>
+  <figure>
+    <img src="/blog/meteorite-identification/leak-background-val.png" alt="Validation F1 when training on the background only" width="1000" height="769" loading="lazy" />
+    <figcaption>Background only: validation F1 is above 0.9 without seeing any stone.</figcaption>
+  </figure>
+</div>
+
+As an exploratory diagnostic, we ran HDBSCAN directly on the ConvNeXt-Tiny embeddings. *This analysis was done in Phase 1, before we recognized the need for dimensionality reduction; even so, the embeddings already showed some clustering structure, especially for the background.*
+
+<div class="figure-grid">
+  <figure>
+    <img src="/blog/meteorite-identification/umap-subject.png" alt="UMAP of stone-only embeddings, train and test" width="900" height="748" loading="lazy" />
+    <figcaption>Stone only: train (blue) and test (red) form one diffuse cloud.</figcaption>
+  </figure>
+  <figure>
+    <img src="/blog/meteorite-identification/umap-background.png" alt="UMAP of background-only embeddings, train and test" width="900" height="748" loading="lazy" />
+    <figcaption>Background only: tight clusters, which is what a random split leaks across.</figcaption>
+  </figure>
+</div>
+
+We masked the backgrounds in the training set for the experiments below.
+
+## Test distribution
+
+We collected 3,955 external images (658 meteorite, 3,297 rock) to compare the distributions and build a better validation set.
+
+For this later analysis, we first reduced the DINOv2 embeddings to 64 dimensions with UMAP and then ran HDBSCAN. With UMAP fitted on the training set, many test images fall outside the training clusters.
+
+<figure class="figure-narrow">
+  <img src="/blog/meteorite-identification/umap-train-test.png" alt="UMAP fitted on the training set with the test set projected in" width="1400" height="1000" loading="lazy" />
+  <figcaption>UMAP fitted on train only (11 clusters, 345 noise points), then the 194 test images projected in. The test set sits in the gaps and on the edges of the clusters.</figcaption>
+</figure>
+
+So even a leak-free random split would not estimate test performance reliably. We selected a proxy validation set from the external images using distribution distance. MMD-greedy selection came closest (FID 165.6 versus 224.5 for the plain training data), but its score still differed from the real test score. We used it only for the first baseline and tuned later runs against the competition F1.
+
+<figure>
+  <img src="/blog/meteorite-identification/validation-vs-test.png" alt="Two proxy validation scores plotted against the real test F1 across the same runs" width="1200" height="412" loading="lazy" />
+  <figcaption>Proxy validation (blue) against the real test F1 (orange) for the same runs. The proxy is informative when gaps are large, and useless for fine-tuning at the top.</figcaption>
+</figure>
+
+## Preprocessing
+
+We segmented the main object with SAM (prompt: *"the main stone or rock in picture"*), took the bounding box of the mask with a 10% margin, and resized to 288×288.
+This alone moved F1 from 0.64516 to 0.70222. Fixing a bug where the background left by mask-and-resize was not actually black took it to 0.73684.
+
+Training on cropped, black-backed images but predicting on the **original** test images scored higher than converting the test images in the same way; the latter scored 0.72072.
+The black background therefore did not align the two domains. In these experiments, it acted as a regularizer that reduced reliance on the surrounding scene.
+
+## Texture patches
+
+With 5,098 images, larger backbones may overfit. Instead of collecting more data, we generated more training views from each image.
+
+For each image, we sampled random patches from the stone region while limiting blank pixels. This gave the model more local texture views and reduced reliance on the scene.
+
+**Patch scale.** Large patches (0.30 to 0.70 of the image) approach full-image training and score 0.70339. Small patches (0.08 to 0.30) lose stone structure and score 0.68889. We use roughly 0.18 to 0.55.
+
+### Patch budget and model scaling
+
+We then scaled the model while keeping the patch-data-to-parameter ratio roughly fixed:
+
+| Model | Params | Patches per image × epochs | Test F1 |
+| --- | --- | --- | --- |
+| ConvNeXt Tiny | 28M | 1 × 40 | 0.73832 |
+| ConvNeXt Small | 50M | 2 × 40 | 0.75455 |
+| ConvNeXt Base | 89M | 3 × 40 | 0.67857 |
+
+The goal was to look for a scaling effect: Small improved over Tiny, but Base performed worse. The Base result may reflect overfitting to small or overlapping patches, so this experiment did not establish a consistent scaling effect.
+
+## Cumulative improvements
+
+The table shows the score after each major change. Several changes were introduced together, so the rows are milestones rather than isolated causal estimates.
+
+| Step | Test F1 | Δ |
+| --- | --- | --- |
+| Initial baseline | 0.70222 | n/a |
+| Cropped + black background, SGD | 0.73684 | +0.03462 |
+| Texture patches | 0.73832 | +0.00148 |
+| ConvNeXt Small, 2 patches per epoch | 0.75455 | +0.01623 |
+| + cosine restart (checkpoint at epoch 10) | 0.79365 | +0.03910 |
+| Three-model weighted ensemble | 0.81633 | +0.02268 |
+
+- **Backbone.** DINOv3 worked well for clustering but worse as a classifier. EfficientNet was also weaker on local texture, so we used ConvNeXt.
+- **Optimizer.** SGD with Nesterov momentum and cosine restarts reached 0.73684 on the cropped input. We did not isolate the optimizer effect from the crop change.
+- **LR schedule.** The best checkpoint was often not the last one. The strongest single model reached 0.79365 at epoch 10 of a 40-epoch run, so we evaluated checkpoints throughout training.
+- **Model size.** Small improved over Tiny in the final setup. Base scored 0.67857, and ConvNeXt V2 scored 0.66932 with our SGD setup.
+
+<figure>
+  <img src="/blog/meteorite-identification/training-curves.png" alt="Training loss and test F1 across epochs for the best single model" width="1400" height="574" loading="lazy" />
+  <figcaption>The strongest single model (ConvNeXt Small, texture patches, cosine restart). Test F1 is noisy around restart boundaries and peaks at 0.79365 on epoch 10, while the final epoch only reaches 0.75336.</figcaption>
+</figure>
+
+## Failed attempts
+
+The main failed configurations are listed below.
+
+| Tried | Result | Why we dropped it |
+| --- | --- | --- |
+| White background instead of black | 0.71429 | shifted the brightness distribution |
+| Larger / smaller patch scale | 0.70339 / 0.68889 | too close to full image / too little structure |
+| Multi-patch inference | 0.721 / 0.717 | averaging dilutes the best patch |
+| TTA, 4-way and 8-way | ~0.737 | same reason as multi-patch |
+| Model soup | 0.65193 / 0.711 | restart oscillation breaks weight averaging |
+| ConvNeXt V2 | 0.66932 / 0.67500 | poor on small data with SGD |
+| RandAugment / MixUp | 0.71552 / 0.70769 | generic augmentation does not fix a distribution shift |
+| MC Dropout (50 passes) | ±0.01 F1 | about half of the "uncertain" samples were still right |
+| Staged unfreezing of the backbone | 0.42857 | too hard to tune |
+
+None of the tested inference-time methods improved the score. TTA, multi-patch averaging, and model soup reduced accuracy.
+
+## The final ensemble
+
+Three texture models, weighted 0.62 / 0.28 / 0.10:
+
+- ConvNeXt Small, 2 patches, cosine restart (the best single model)
+- ConvNeXt Tiny, texture patches
+- ConvNeXt Small, 2 patches, plain cosine
+
+We averaged the probabilities and searched for one shared threshold. It landed around 0.44 and predicted about 110 positives out of 194.
+
+More models made it worse. Mixing texture and full-image models reached 0.76923, while the three texture models reached 0.81633.
+
+## Submission history
+
+All 96 submissions, with new best scores marked in green. Before the midterm, gains came from post-processing and submission fixes; after it, they came from training.
 
 <ExperimentChart />
+
+## Conclusions
+
+- **Validation can be misleading under distribution shift.** The proxy set helped choose an initial baseline but not fine-tune the best models.
+- **Input design mattered more than inference tricks.** Cropping and texture patches produced the largest improvements.
+- **The final ensemble used only texture models.** Adding full-image models reduced the score.
+
+## Future work
+
+Possible next steps are hard-negative mining, collecting external images closer to the test distribution, and learning the ensemble weights. The last option needs a more reliable validation set.
+
+The [midterm report (PDF, in Chinese)](/blog/meteorite-identification/midterm_report.pdf) documents the earlier phase, while the [final project report (PDF, in Chinese)](/blog/meteorite-identification/report.pdf) contains the full methodology, ablations and diagnostics.

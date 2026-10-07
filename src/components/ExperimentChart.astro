@@ -2,19 +2,17 @@
 import type { ExperimentChartName } from "../data/meteorite";
 
 const tabs: { id: ExperimentChartName; label: string }[] = [
-  { id: "combined", label: "Combined" },
-  { id: "new", label: "New" },
-  { id: "old", label: "Old" },
+  { id: "combined", label: "All" },
+  { id: "new", label: "After midterm" },
+  { id: "old", label: "Before midterm" },
 ];
 
 const initial: ExperimentChartName = "combined";
 ---
 
-<section class="experiment-chart" data-experiment-chart data-initial={initial}>
+<figure class="experiment-chart" data-experiment-chart data-initial={initial}>
   <div class="experiment-chart__header">
-    <p class="experiment-chart__sub">
-      Hover, tap or tab to a point for details. Old is before the midterm, New is after.
-    </p>
+    <p class="experiment-chart__sub">Hover or tap a point for its configuration and score.</p>
     <nav class="experiment-chart__tabs" aria-label="Chart selection">
       {
         tabs.map((tab) => (
@@ -32,16 +30,88 @@ const initial: ExperimentChartName = "combined";
       data-chart-svg
       role="group"
       aria-label="Test F1 for every submission in the meteorite-identification competition"
-      viewBox="0 0 1100 600"
     ></svg>
     <div class="experiment-chart__tooltip" data-chart-tooltip aria-hidden="true"></div>
   </div>
-</section>
+
+  <div class="experiment-chart__legend">
+    <span><i class="experiment-chart__swatch is-best"></i>New best</span>
+    <span><i class="experiment-chart__swatch is-run"></i>Running best</span>
+    <span><i class="experiment-chart__swatch is-tried"></i>Tried, not kept</span>
+  </div>
+
+  <figcaption class="experiment-chart__caption">
+    Each dot is one submission, in the order we sent it, scored with the competition's binary F1. Before the midterm
+    (the dashed line in <em>All</em>) the gains came from submission-side post-processing; afterwards they came from
+    training.
+  </figcaption>
+</figure>
 
 <script>
   import { experimentCharts, type Experiment, type ExperimentChartName } from "../data/meteorite";
 
   const NS = "http://www.w3.org/2000/svg";
+
+  type LayoutName = "wide" | "narrow";
+
+  type Layout = {
+    w: number;
+    h: number;
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+    rBest: number;
+    rTry: number;
+    fTitle: number;
+    fTick: number;
+    fAxis: number;
+    fLabel: number;
+    yLabelX: number;
+    annotate: boolean;
+    xStep: number;
+  };
+
+  // Two hand-tuned layouts. The narrow one drops the point labels and uses
+  // larger font sizes, because the SVG is scaled down to about 350px there.
+  const LAYOUTS: Record<LayoutName, Layout> = {
+    wide: {
+      w: 1100,
+      h: 470,
+      top: 100,
+      right: 44,
+      bottom: 62,
+      left: 78,
+      rBest: 4.4,
+      rTry: 3.1,
+      fTitle: 15,
+      fTick: 12,
+      fAxis: 13,
+      fLabel: 11,
+      yLabelX: 20,
+      annotate: true,
+      xStep: 20,
+    },
+    narrow: {
+      w: 460,
+      h: 520,
+      top: 54,
+      right: 16,
+      bottom: 70,
+      left: 70,
+      rBest: 3,
+      rTry: 2.2,
+      fTitle: 15,
+      fTick: 14,
+      fAxis: 15,
+      fLabel: 0,
+      yLabelX: 15,
+      annotate: false,
+      xStep: 20,
+    },
+  };
+
+  const NARROW_AT = 620;
 
   function el(name: string, attrs: Record<string, string | number>, text?: string) {
     const node = document.createElementNS(NS, name);
@@ -54,6 +124,26 @@ const initial: ExperimentChartName = "combined";
 
   const escapeHtml = (value: string) =>
     value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+
+  /** Axis-aligned box of a -45°-rotated two-line label anchored at the origin. */
+  function labelBox(width: number, height: number) {
+    return {
+      x1: -0.566 * height,
+      x2: 0.707 * width + 0.141 * height,
+      y1: -(0.707 * width + 0.566 * height),
+      y2: 0.141 * height,
+    };
+  }
+
+  const overlaps = (a: ReturnType<typeof labelBox>, b: ReturnType<typeof labelBox>, pad: number) =>
+    a.x1 < b.x2 + pad && a.x2 > b.x1 - pad && a.y1 < b.y2 + pad && a.y2 > b.y1 - pad;
+
+  const shift = (box: ReturnType<typeof labelBox>, x: number, y: number) => ({
+    x1: box.x1 + x,
+    x2: box.x2 + x,
+    y1: box.y1 + y,
+    y2: box.y2 + y,
+  });
 
   document.querySelectorAll<HTMLElement>("[data-experiment-chart]").forEach((root) => {
     const svg = root.querySelector<SVGSVGElement>("[data-chart-svg]");
@@ -80,10 +170,10 @@ const initial: ExperimentChartName = "combined";
     const showTip = (clientX: number, clientY: number, point: Experiment) => {
       tooltip.innerHTML = `
         <div class="experiment-chart__tip-name">${escapeHtml(point.name)}</div>
-        <div class="experiment-chart__tip-row"><span>Experiment</span><strong>#${point.x}</strong></div>
+        <div class="experiment-chart__tip-row"><span>Submission</span><strong>#${point.x}</strong></div>
         <div class="experiment-chart__tip-row"><span>Test F1</span><strong>${fmt(point.score)}</strong></div>
         <div class="experiment-chart__tip-row"><span>Running best</span><strong>${fmt(point.best)}</strong></div>
-        <div class="experiment-chart__tip-row"><span>Status</span><strong>${point.kept ? "new best" : "tried / not kept"}</strong></div>
+        <div class="experiment-chart__tip-row"><span>Status</span><strong>${point.kept ? "new best" : "tried, not kept"}</strong></div>
       `;
       tooltip.classList.add("is-visible");
       moveTip(clientX, clientY);
@@ -92,81 +182,95 @@ const initial: ExperimentChartName = "combined";
     const hideTip = () => tooltip.classList.remove("is-visible");
 
     // A tapped tooltip stays open until the next tap elsewhere or a scroll,
-    // since a fixed tooltip would otherwise drift away from its point.
+    // since a fixed tooltip would otherwise drift away from its point. A
+    // keyboard-focused point keeps its tooltip: focusing scrolls the page,
+    // which would otherwise close it on arrival.
     document.addEventListener("pointerdown", (event) => {
       if (!(event.target as Element).closest?.(".experiment-chart__point")) hideTip();
     });
-    window.addEventListener("scroll", hideTip, { passive: true });
+    window.addEventListener(
+      "scroll",
+      () => {
+        const active = document.activeElement;
+        if (!active?.closest?.(".experiment-chart__point")) {
+          hideTip();
+          return;
+        }
+        const rect = active.getBoundingClientRect();
+        moveTip(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      },
+      { passive: true },
+    );
 
-    const render = (which: ExperimentChartName) => {
+    const draw = (which: ExperimentChartName, layout: Layout) => {
       tabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.chartTab === which));
       while (svg.firstChild) svg.removeChild(svg.firstChild);
 
       const chart = experimentCharts[which];
       const data = chart.data;
-      const width = 1100;
-      const height = 600;
-      const margin = { top: 52, right: 68, bottom: 68, left: 72 };
-      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      const { w, h, top, right, bottom, left } = layout;
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.setAttribute(
+        "aria-label",
+        `${chart.title}: test F1 for ${data.length} submissions, ${data.filter((point) => point.kept).length} new bests`,
+      );
 
       const scores = data.map((point) => point.score);
       const xMax = data.length + 10;
-      const yMin = Math.max(0.5, Math.min(...scores) - 0.025);
-      const yMax = Math.min(0.85, Math.max(...scores) + 0.025);
-      const innerW = width - margin.left - margin.right;
-      const innerH = height - margin.top - margin.bottom;
-      const sx = (x: number) => margin.left + (x / xMax) * innerW;
-      const sy = (y: number) => margin.top + (1 - (y - yMin) / (yMax - yMin)) * innerH;
+      // Asymmetric padding: the top needs room for the point labels, the bottom
+      // does not, so keep the low scores close to the axis.
+      const yMin = Math.max(0.5, Math.min(...scores) - 0.015);
+      const yMax = Math.min(0.85, Math.max(...scores) + 0.03);
+      const innerW = w - left - right;
+      const innerH = h - top - bottom;
+      const sx = (x: number) => left + (x / xMax) * innerW;
+      const sy = (y: number) => top + (1 - (y - yMin) / (yMax - yMin)) * innerH;
 
       svg.appendChild(
         el(
           "text",
-          { x: width / 2, y: 30, class: "experiment-chart__chart-title", "text-anchor": "middle" },
-          `${chart.title}: ${data.length} test evaluations, ${data.filter((point) => point.kept).length} new bests`,
+          { x: left, y: layout.fTitle + 19, class: "experiment-chart__chart-title", "font-size": layout.fTitle },
+          // The wide title has room for the chart name; the narrow one does not.
+          layout.annotate
+            ? `${chart.title} · ${data.length} submissions · ${data.filter((point) => point.kept).length} new bests`
+            : `${data.length} submissions · ${data.filter((point) => point.kept).length} new bests`,
         ),
       );
 
-      const step = 0.05;
-      for (let value = Math.ceil(yMin / step) * step; value <= yMax + 1e-9; value += step) {
+      for (let value = Math.ceil(yMin / 0.05) * 0.05; value <= yMax + 1e-9; value += 0.05) {
         const tick = Number(value.toFixed(2));
         svg.appendChild(
-          el("line", {
-            x1: margin.left,
-            x2: width - margin.right,
-            y1: sy(tick),
-            y2: sy(tick),
-            stroke: "var(--line)",
-            "stroke-width": 1,
-          }),
+          el("line", { x1: left, x2: w - right, y1: sy(tick), y2: sy(tick), stroke: "var(--line)", "stroke-width": 1 }),
         );
         svg.appendChild(
           el(
             "text",
-            { x: margin.left - 12, y: sy(tick) + 4, class: "experiment-chart__tick", "text-anchor": "end" },
+            {
+              x: left - 12,
+              y: sy(tick) + layout.fTick * 0.36,
+              class: "experiment-chart__tick",
+              "font-size": layout.fTick,
+              "text-anchor": "end",
+            },
             tick.toFixed(2),
           ),
         );
       }
 
-      const xStep = data.length > 80 ? 20 : data.length > 35 ? 10 : 5;
+      const xStep = data.length > 80 ? layout.xStep : data.length > 35 ? layout.xStep / 2 : layout.xStep / 4;
+
       for (let value = 0; value <= data.length; value += xStep) {
         svg.appendChild(
-          el("line", {
-            x1: sx(value),
-            x2: sx(value),
-            y1: margin.top,
-            y2: height - margin.bottom,
-            stroke: "var(--line)",
-            "stroke-width": 1,
-          }),
+          el("line", { x1: sx(value), x2: sx(value), y1: top, y2: h - bottom, stroke: "var(--line)", "stroke-width": 1 }),
         );
         svg.appendChild(
           el(
             "text",
             {
               x: sx(value),
-              y: height - margin.bottom + 24,
+              y: h - bottom + layout.fTick * 1.9,
               class: "experiment-chart__tick",
+              "font-size": layout.fTick,
               "text-anchor": "middle",
             },
             String(value),
@@ -174,66 +278,77 @@ const initial: ExperimentChartName = "combined";
         );
       }
 
-      svg.appendChild(
-        el("line", {
-          x1: margin.left,
-          x2: width - margin.right,
-          y1: height - margin.bottom,
-          y2: height - margin.bottom,
-          stroke: "var(--text-soft)",
-          "stroke-width": 1.2,
-        }),
-      );
-      svg.appendChild(
-        el("line", {
-          x1: margin.left,
-          x2: margin.left,
-          y1: margin.top,
-          y2: height - margin.bottom,
-          stroke: "var(--text-soft)",
-          "stroke-width": 1.2,
-        }),
-      );
+      for (const [x1, y1, x2, y2] of [
+        [left, h - bottom, w - right, h - bottom],
+        [left, top, left, h - bottom],
+      ]) {
+        svg.appendChild(el("line", { x1, x2, y1, y2, stroke: "var(--text-soft)", "stroke-width": 1.2 }));
+      }
+
       svg.appendChild(
         el(
           "text",
-          { x: width / 2, y: height - 22, class: "experiment-chart__axis-label", "text-anchor": "middle" },
-          "Experiment #",
+          {
+            x: left + innerW / 2,
+            y: h - 16,
+            class: "experiment-chart__axis-label",
+            "font-size": layout.fAxis,
+            "text-anchor": "middle",
+          },
+          "Submission #",
         ),
       );
       svg.appendChild(
         el(
           "text",
           {
-            x: 22,
-            y: height / 2,
+            x: layout.yLabelX,
+            y: top + innerH / 2,
             class: "experiment-chart__axis-label",
+            "font-size": layout.fAxis,
             "text-anchor": "middle",
-            transform: `rotate(-90 22 ${height / 2})`,
+            transform: `rotate(-90 ${layout.yLabelX} ${top + innerH / 2})`,
           },
-          "Test F1 (higher is better)",
+          layout.annotate ? "Test F1 (higher is better)" : "Test F1",
         ),
       );
 
-      if (chart.splitAt) {
-        const x = sx(chart.splitAt + 0.5);
-        svg.appendChild(
-          el("line", {
-            x1: x,
-            x2: x,
-            y1: margin.top,
-            y2: height - margin.bottom,
-            stroke: "var(--text-muted)",
-            "stroke-dasharray": "5 4",
-            "stroke-width": 1.2,
-          }),
-        );
-        svg.appendChild(
-          el("text", { x: x + 8, y: margin.top + 24, class: "experiment-chart__tick" }, "new phase"),
-        );
+      // Old-stage dots first, then the running-best line over them, then the
+      // bests, so the line never hides a green marker.
+      const marks: { node: SVGElement; point: Experiment }[] = [];
+      for (const point of data) {
+        const node = el("circle", {
+          cx: sx(point.x),
+          cy: sy(point.score),
+          r: point.kept ? layout.rBest : layout.rTry,
+          fill: point.kept ? "var(--ec-green)" : "var(--ec-gray)",
+          stroke: point.kept ? "var(--ec-green-dark)" : "var(--ec-gray-stroke)",
+          "stroke-width": point.kept ? 1.3 : 0.7,
+          class: "experiment-chart__point",
+          tabindex: 0,
+          role: "img",
+          "aria-label": `#${point.x} ${point.name}: F1 ${fmt(point.score)}${point.kept ? ", new best" : ", not kept"}`,
+        });
+        node.addEventListener("pointerenter", (event) => {
+          if (event.pointerType === "mouse") showTip(event.clientX, event.clientY, point);
+        });
+        node.addEventListener("pointermove", (event) => {
+          if (event.pointerType === "mouse") moveTip(event.clientX, event.clientY);
+        });
+        node.addEventListener("pointerleave", (event) => {
+          if (event.pointerType === "mouse") hideTip();
+        });
+        node.addEventListener("pointerdown", (event) => {
+          if (event.pointerType !== "mouse") showTip(event.clientX, event.clientY, point);
+        });
+        node.addEventListener("focus", () => {
+          const rect = node.getBoundingClientRect();
+          showTip(rect.left + rect.width / 2, rect.top + rect.height / 2, point);
+        });
+        node.addEventListener("blur", hideTip);
+        marks.push({ node, point });
       }
 
-      // Step line through the running best.
       let path = "";
       data.forEach((point, index) => {
         const x = sx(point.x);
@@ -242,109 +357,138 @@ const initial: ExperimentChartName = "combined";
         else path += ` L ${x} ${sy(data[index - 1].best)} L ${x} ${y}`;
       });
       svg.appendChild(
-        el("path", {
-          d: path,
-          fill: "none",
-          stroke: "var(--ec-green)",
-          "stroke-width": 2.8,
-          opacity: 0.72,
-        }),
+        el("path", { d: path, fill: "none", stroke: "var(--ec-green-line)", "stroke-width": 2.6 }),
       );
 
-      data.forEach((point) => {
-        const circle = el("circle", {
-          cx: sx(point.x),
-          cy: sy(point.score),
-          r: point.kept ? 5.6 : 4.2,
-          fill: point.kept ? "var(--ec-green)" : "var(--ec-gray)",
-          stroke: point.kept ? "var(--ec-green-dark)" : "var(--ec-gray-stroke)",
-          "stroke-width": point.kept ? 1.3 : 0.7,
-          opacity: point.kept ? 0.98 : 0.72,
-          class: "experiment-chart__point",
-          tabindex: 0,
-          role: "img",
-          "aria-label": `#${point.x} ${point.name}: F1 ${fmt(point.score)}${point.kept ? ", new best" : ""}`,
-        });
-        circle.addEventListener("pointerenter", (event) => {
-          if (event.pointerType === "mouse") showTip(event.clientX, event.clientY, point);
-        });
-        circle.addEventListener("pointermove", (event) => {
-          if (event.pointerType === "mouse") moveTip(event.clientX, event.clientY);
-        });
-        circle.addEventListener("pointerleave", (event) => {
-          if (event.pointerType === "mouse") hideTip();
-        });
-        circle.addEventListener("pointerdown", (event) => {
-          if (event.pointerType !== "mouse") showTip(event.clientX, event.clientY, point);
-        });
-        circle.addEventListener("focus", () => {
-          const rect = circle.getBoundingClientRect();
-          showTip(rect.left + rect.width / 2, rect.top + rect.height / 2, point);
-        });
-        circle.addEventListener("blur", hideTip);
-        svg.appendChild(circle);
-      });
+      for (const { node, point } of marks) {
+        if (!point.kept) svg.appendChild(node);
+      }
 
-      const legendX = width - 150;
-      const legendY = height - 68;
-      svg.appendChild(
-        el("rect", {
-          x: legendX - 12,
-          y: legendY - 24,
-          width: 150,
-          height: 64,
-          rx: 6,
-          fill: "var(--bg-strong)",
-          stroke: "var(--line)",
-        }),
-      );
-      svg.appendChild(
-        el("circle", {
-          cx: legendX,
-          cy: legendY - 4,
-          r: 4.2,
-          fill: "var(--ec-gray)",
-          opacity: 0.72,
-          stroke: "var(--ec-gray-stroke)",
-        }),
-      );
-      svg.appendChild(
-        el("text", { x: legendX + 14, y: legendY, class: "experiment-chart__legend" }, "Tried / not kept"),
-      );
-      svg.appendChild(
-        el("circle", {
-          cx: legendX,
-          cy: legendY + 20,
-          r: 5.6,
-          fill: "var(--ec-green)",
-          stroke: "var(--ec-green-dark)",
-        }),
-      );
-      svg.appendChild(
-        el("text", { x: legendX + 14, y: legendY + 24, class: "experiment-chart__legend" }, "New best"),
-      );
+      if (chart.splitAt) {
+        const x = sx(chart.splitAt + 0.5);
+        svg.appendChild(
+          el("line", {
+            x1: x,
+            x2: x,
+            y1: top,
+            y2: h - bottom,
+            stroke: "var(--text-muted)",
+            "stroke-dasharray": "5 4",
+            "stroke-width": 1.2,
+          }),
+        );
+        svg.appendChild(
+          el(
+            "text",
+            {
+              x: x + (x > w / 2 ? -8 : 8),
+              y: layout.annotate ? top - 8 : top + layout.fTick * 1.15,
+              class: "experiment-chart__tick",
+              "font-size": layout.fTick,
+              "text-anchor": x > w / 2 ? "end" : "start",
+            },
+            "midterm",
+          ),
+        );
+      }
+
+      for (const { node, point } of marks) {
+        if (point.kept) svg.appendChild(node);
+      }
+
+      if (layout.annotate) {
+        const placed: ReturnType<typeof labelBox>[] = [];
+
+        for (const point of data.filter((item) => item.milestone && item.kept)) {
+          const x = sx(point.x);
+          const y = sy(point.score);
+          const box = labelBox(point.name.length * layout.fLabel * 0.6, layout.fLabel * 2.35);
+          // A -45° label grows up and to the right. Try the smallest nudge that
+          // clears the labels already placed, up or down, so each label stays
+          // visually attached to its own dot.
+          const nudge = 22;
+          const candidates = [0, -nudge, nudge, -2 * nudge, 2 * nudge, -3 * nudge, 3 * nudge, -4 * nudge, 4 * nudge];
+
+          const clashes = (dy: number) =>
+            placed.filter((test) => overlaps(shift(box, x + 10, y + dy), test, 6)).length;
+          const fits = (dy: number) => y + dy + box.y1 > 8;
+          let pick = candidates.findIndex((dy) => clashes(dy) === 0 && fits(dy));
+          if (pick === -1) {
+            const ranked = candidates.map((dy) => (fits(dy) ? clashes(dy) : Number.POSITIVE_INFINITY));
+            pick = ranked.indexOf(Math.min(...ranked));
+          }
+
+          const anchorX = x + 10;
+          const anchorY = y + (candidates[pick] ?? 0);
+          placed.push(shift(box, anchorX, anchorY));
+
+          const group = el("g", {
+            transform: `translate(${anchorX} ${anchorY}) rotate(-45)`,
+            class: "experiment-chart__annot",
+          });
+          group.appendChild(
+            el("text", { x: 0, y: 0, class: "experiment-chart__annot-line", "font-size": layout.fLabel }, point.name),
+          );
+          group.appendChild(
+            el(
+              "text",
+              { x: 0, y: layout.fLabel * 1.25, class: "experiment-chart__annot-line is-score", "font-size": layout.fLabel },
+              fmt(point.score),
+            ),
+          );
+          svg.appendChild(group);
+        }
+      }
     };
 
-    tabs.forEach((tab) =>
-      tab.addEventListener("click", () => render(tab.dataset.chartTab as ExperimentChartName)),
-    );
+    let current: ExperimentChartName = (root.dataset.initial as ExperimentChartName) ?? "combined";
+    let currentLayout: LayoutName | null = null;
 
-    render((root.dataset.initial as ExperimentChartName) ?? "combined");
+    const render = () => {
+      const name: LayoutName = root.clientWidth < NARROW_AT ? "narrow" : "wide";
+      const changed = name !== currentLayout;
+      currentLayout = name;
+      if (changed || !svg.childElementCount) draw(current, LAYOUTS[name]);
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        current = tab.dataset.chartTab as ExperimentChartName;
+        draw(current, LAYOUTS[currentLayout ?? "wide"]);
+      });
+    });
+
+    render();
+
+    if ("ResizeObserver" in window) {
+      let frame = 0;
+      new ResizeObserver(() => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(render);
+      }).observe(root);
+    }
   });
 </script>
 
 <style is:global>
   .experiment-chart {
-    --ec-green: light-dark(#2ecc71, #3ddc84);
-    --ec-green-dark: light-dark(#176f3b, #1f9d55);
-    --ec-gray: light-dark(#a9a9a9, #5c6675);
-    --ec-gray-stroke: light-dark(#8a8a8a, #7a8494);
+    --ec-green: light-dark(#1f9d55, #3ddc84);
+    --ec-green-line: light-dark(#1f9d55, #3ddc84);
+    --ec-green-dark: light-dark(#14663a, #1f9d55);
+    --ec-gray: light-dark(#7f8794, #6b7686);
+    --ec-gray-stroke: light-dark(#69707c, #8b96a6);
     --ec-width: min(var(--max-width), calc(100vw - 2 * var(--gutter)));
 
     width: var(--ec-width);
-    /* Centre on the entry column (100cqw), not on the narrower prose column. */
-    margin: 2.4rem calc((100cqw - var(--ec-width)) / 2);
     font-family: var(--font-mono-stack);
+  }
+
+  /* Centre on the entry column (100cqw), not on the narrower prose column. The
+     negative inline margin also stops the prose column from being stretched to
+     --ec-width, so the doubled class has to outrank `.prose figure`. */
+  .experiment-chart.experiment-chart {
+    margin-block: 2.6rem;
+    margin-inline: calc((100cqw - var(--ec-width)) / 2);
   }
 
   .experiment-chart__header {
@@ -364,6 +508,7 @@ const initial: ExperimentChartName = "combined";
 
   .experiment-chart__tabs {
     display: inline-flex;
+    flex-wrap: wrap;
     gap: 4px;
     padding: 4px;
     border: 1px solid var(--line);
@@ -379,7 +524,8 @@ const initial: ExperimentChartName = "combined";
     background: transparent;
     color: var(--text-soft);
     font: inherit;
-    font-size: 14px;
+    font-size: 13px;
+    white-space: nowrap;
     cursor: pointer;
     transition: background-color var(--transition), color var(--transition);
   }
@@ -391,11 +537,10 @@ const initial: ExperimentChartName = "combined";
 
   .experiment-chart__panel {
     position: relative;
-    padding: 12px 16px;
+    padding: 10px 14px;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--bg-strong);
-    overflow: hidden;
   }
 
   .experiment-chart__svg {
@@ -406,24 +551,29 @@ const initial: ExperimentChartName = "combined";
 
   .experiment-chart__axis-label {
     fill: var(--text-soft);
-    font-size: 14px;
     font-weight: 600;
   }
 
   .experiment-chart__tick {
     fill: var(--text-muted);
-    font-size: 12px;
   }
 
   .experiment-chart__chart-title {
     fill: var(--text);
-    font-size: 20px;
     font-weight: 700;
   }
 
-  .experiment-chart__legend {
-    fill: var(--text-soft);
-    font-size: 13px;
+  .experiment-chart__annot-line {
+    fill: var(--ec-green-dark);
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: var(--bg-strong);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+
+  .experiment-chart__annot-line.is-score {
+    font-weight: 500;
   }
 
   .experiment-chart__point {
@@ -434,6 +584,44 @@ const initial: ExperimentChartName = "combined";
   .experiment-chart__point:focus-visible {
     stroke: var(--text);
     stroke-width: 2.5;
+  }
+
+  .experiment-chart__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 10px;
+    color: var(--text-soft);
+    font-size: 12px;
+  }
+
+  .experiment-chart__legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .experiment-chart__swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .experiment-chart__swatch.is-best {
+    background: var(--ec-green);
+    box-shadow: 0 0 0 1px var(--ec-green-dark);
+  }
+
+  .experiment-chart__swatch.is-tried {
+    background: var(--ec-gray);
+    box-shadow: 0 0 0 1px var(--ec-gray-stroke);
+  }
+
+  .experiment-chart__swatch.is-run {
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--ec-green-line);
   }
 
   .experiment-chart__tooltip {
@@ -479,14 +667,18 @@ const initial: ExperimentChartName = "combined";
       align-items: start;
       flex-direction: column;
     }
+  }
 
-    /* Keep labels legible: let the chart scroll sideways instead of shrinking. */
-    .experiment-chart__panel {
-      overflow-x: auto;
+  @media (max-width: 480px) {
+    .experiment-chart__tabs button {
+      padding: 7px 9px;
+      font-size: 12px;
     }
+  }
 
-    .experiment-chart__svg {
-      width: 680px;
+  @media (max-width: 620px) {
+    .experiment-chart .experiment-chart__caption {
+      text-align: left;
     }
   }
 </style>

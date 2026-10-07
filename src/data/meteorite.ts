@@ -3,10 +3,13 @@
 // Every entry is one test submission, in order: `score` is its binary F1 on the
 // 194-image test set. The old stage ran before the midterm, the new stage after.
 // Submission numbers, running bests and "new best" flags are derived below.
+// `milestone` marks the few bests worth labelling on the chart, so the plot
+// shows the story instead of 96 unlabelled dots.
 
 export interface Submission {
   name: string;
   score: number;
+  milestone?: boolean;
 }
 
 export interface Experiment extends Submission {
@@ -16,6 +19,8 @@ export interface Experiment extends Submission {
   best: number;
   /** Whether this submission set a new best. */
   kept: boolean;
+  /** Whether the chart should label this submission. */
+  milestone: boolean;
 }
 
 export interface ExperimentChartData {
@@ -26,7 +31,7 @@ export interface ExperimentChartData {
 }
 
 const OLD: Submission[] = [
-  { name: "split baseline", score: 0.64516 },
+  { name: "split baseline", score: 0.64516, milestone: true },
   { name: "top-3 soup submit", score: 0.69856 },
   { name: "seed ensemble", score: 0.65968 },
   { name: "mytest split", score: 0.65979 },
@@ -34,7 +39,7 @@ const OLD: Submission[] = [
   { name: "mytest aug", score: 0.67021 },
   { name: "split-val aug", score: 0.63212 },
   { name: "small + mytest", score: 0.65263 },
-  { name: "reduced not-stone", score: 0.71962 },
+  { name: "reduced not-stone", score: 0.71962, milestone: true },
   { name: "restore 4 IDs", score: 0.71559 },
   { name: "top5 FP-risk zero", score: 0.7177 },
   { name: "zero 108/124/131", score: 0.7109 },
@@ -47,7 +52,7 @@ const OLD: Submission[] = [
   { name: "manual/web patch", score: 0.74146 },
   { name: "aggressive patch", score: 0.74747 },
   { name: "restore100+066", score: 0.74747 },
-  { name: "restore 100=0", score: 0.75126 },
+  { name: "restore 100=0", score: 0.75126, milestone: true },
   { name: "zero 186/006/086/124", score: 0.74611 },
   { name: "zero 086/186", score: 0.74871 },
 ];
@@ -92,7 +97,7 @@ const NEW: Submission[] = [
   { name: "tex+baseline", score: 0.75829 },
   { name: "tex+base+s256", score: 0.75701 },
   { name: "base+s256", score: 0.73892 },
-  { name: "tex+s256 weighted", score: 0.76923 },
+  { name: "tex+s256 weighted", score: 0.76923, milestone: true },
   { name: "tex+base weighted", score: 0.76056 },
   { name: "3-way weighted", score: 0.76923 },
   { name: "tex_cutmix", score: 0.74112 },
@@ -124,7 +129,7 @@ const NEW: Submission[] = [
   { name: "small rpt2 restart ep10", score: 0.79365 },
   { name: "small rpt2 restart ep30", score: 0.77512 },
   { name: "small rpt4 restart", score: 0.76415 },
-  { name: "final 3-model ensemble", score: 0.81633 },
+  { name: "final 3-model ensemble", score: 0.81633, milestone: true },
 ];
 
 function track(submissions: Submission[]): Experiment[] {
@@ -132,7 +137,7 @@ function track(submissions: Submission[]): Experiment[] {
   return submissions.map((submission, index) => {
     const kept = submission.score > best;
     if (kept) best = submission.score;
-    return { ...submission, x: index + 1, best, kept };
+    return { ...submission, x: index + 1, best, kept, milestone: submission.milestone ?? false };
   });
 }
 
