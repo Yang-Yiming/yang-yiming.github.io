@@ -106,7 +106,7 @@ const leadColor = (i: number) => GENRES[amounts.reduce((top, a, gi) => (a[i] > a
     </ul>
   </div>
 
-  <figcaption class="mt__caption">These are the genres that changed how I listen, not everything I listen to. Band height is roughly how much of my listening each one took up. It steps through on its own; pick an era to stay there.</figcaption>
+  <figcaption class="mt__caption">These are the genres that changed how I listen, not everything I listen to. Band height is roughly how much of my listening each one took up. It steps through on its own. Hover across the chart to browse eras, or click one to stay there.</figcaption>
 
   <div class="mt__cards" id="mt-cards" aria-live="off">
     {
@@ -183,7 +183,7 @@ const leadColor = (i: number) => GENRES[amounts.reduce((top, a, gi) => (a[i] > a
 </figure>
 
 <script>
-  // Auto-advance interval; any click or arrow key stops it for good.
+  // Auto-advance interval. Hovering the chart pauses it; a click or arrow key stops it for good.
   const STEP_MS = 3000;
 
   document.querySelectorAll<HTMLElement>("[data-music-timeline]").forEach((root) => {
@@ -201,6 +201,9 @@ const leadColor = (i: number) => GENRES[amounts.reduce((top, a, gi) => (a[i] > a
     let active = n - 1;
     let hovered: string | null = null;
     let timer: number | undefined;
+    let started = false;
+    let hovering = false;
+    let touched = false;
 
     // Hovering a genre wins over the era view; otherwise the era's biggest genres glow brightest.
     const paint = () => {
@@ -228,10 +231,20 @@ const leadColor = (i: number) => GENRES[amounts.reduce((top, a, gi) => (a[i] > a
       paint();
     };
 
-    // User took over: stop the tour and let screen readers hear card changes from now on.
-    const takeOver = () => {
+    // The tour runs only while it has started, nobody is hovering the chart, and nobody took over.
+    const pause = () => {
       clearInterval(timer);
       timer = undefined;
+    };
+    const resume = () => {
+      if (!started || touched || hovering || timer) return;
+      timer = window.setInterval(() => select((active + 1) % n), STEP_MS);
+    };
+
+    // User took over: stop the tour for good and let screen readers hear card changes from now on.
+    const takeOver = () => {
+      touched = true;
+      pause();
       cardStack.setAttribute("aria-live", "polite");
     };
 
@@ -261,6 +274,26 @@ const leadColor = (i: number) => GENRES[amounts.reduce((top, a, gi) => (a[i] > a
 
     paint();
 
+    // Mouse anywhere over the chart: its x position picks the era. Hovering pauses the tour, leaving resumes it.
+    const wave = root.querySelector<HTMLElement>(".mt__wave")!;
+    const deck = root.querySelector<HTMLElement>(".mt__deck")!;
+    deck.addEventListener("pointerenter", (event) => {
+      if (event.pointerType !== "mouse") return;
+      hovering = true;
+      pause();
+    });
+    deck.addEventListener("pointermove", (event) => {
+      if (event.pointerType !== "mouse") return;
+      const { left, width } = wave.getBoundingClientRect();
+      const i = Math.min(n - 1, Math.max(0, Math.floor(((event.clientX - left) / width) * n)));
+      if (i !== active) select(i);
+    });
+    deck.addEventListener("pointerleave", (event) => {
+      if (event.pointerType !== "mouse") return;
+      hovering = false;
+      resume();
+    });
+
     // Reduced motion: stay on "Now" and let the visitor click through.
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -268,8 +301,9 @@ const leadColor = (i: number) => GENRES[amounts.reduce((top, a, gi) => (a[i] > a
     const observer = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) return;
       observer.disconnect();
-      select(0);
-      timer = window.setInterval(() => select((active + 1) % n), STEP_MS);
+      started = true;
+      if (!hovering) select(0);
+      resume();
     }, { threshold: 0.4 });
     observer.observe(root);
   });
